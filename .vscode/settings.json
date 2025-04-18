@@ -1,0 +1,15 @@
+{
+    "cSpell.words": [
+        "addstr",
+        "getch",
+        "lsock",
+        "napms",
+        "outb",
+        "stdscr"
+    ],
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}

@@ -1,0 +1,167 @@
+syntax = "proto3";
+
+package server;
+
+service Server {
+    rpc Signup(UserAuthRequest) returns (StandardServerResponse);
+    rpc Login(UserAuthRequest) returns (UserLoginResponse);
+    rpc Logout(UserLogoutRequest) returns (StandardServerResponse);
+    rpc ListUsernames(ListUsernamesRequest) returns (ListUsernamesResponse);
+    rpc SendMessage(SendMessageRequest) returns (StandardServerResponse);
+    rpc RegisterClient(RegisterClientRequest) returns (StandardServerResponse);
+    rpc ReadMessages(ReadMessagesRequest) returns (ReadMessageResponse);
+    rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
+    rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
+    rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
+    rpc Heartbeat(stream HeartbeatRequest) returns (HeartbeatResponse);
+    rpc CurrentLeader(CurrentLeaderRequest) returns (CurrentLeaderResponse);
+    rpc ConfirmServerDeath(StatusRequest) returns (StatusResponse);
+
+}
+
+message StandardServerResponse {
+    bool success = 1;
+    string message = 2;
+}
+
+message UserAuthRequest {
+    string username = 1;
+    string password = 2;
+    bool from_client = 3;
+}
+
+message UserLoginSuccess {
+    bool success = 1;
+    string message = 2;
+    int32 unread_message_count = 3;
+}
+
+message UserLoginResponse {
+    oneof response {
+        UserLoginSuccess success = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message UserLogoutRequest {
+    string username = 1;
+    bool from_client = 2;
+}
+
+message ListUsernames {
+    bool success = 1;
+    string message = 2;
+    repeated string matches = 3;
+}
+message ListUsernamesRequest {
+    string username_pattern = 1;
+}
+
+message ListUsernamesResponse {
+    oneof response {
+        ListUsernames success = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message SendMessageRequest {
+    string sender_username = 1;
+    string target_username = 2;
+    int32 timestamp = 3;
+    string message = 4;
+    optional string message_id = 5;
+    bool from_client = 6;
+}
+
+
+message RegisterClientRequest {
+    string username = 1;
+    string host = 2;
+    int32 port = 3; 
+    bool from_client = 4;
+}
+
+message ReadMessagesRequest {
+    string username = 1;
+    int32 num_messages = 2;
+    bool from_client = 3;
+}
+
+message UnreadMessage {
+    string message_id = 1;
+    string sender = 2;
+    int32 timestamp = 3;
+    string message = 4;
+}
+
+message ReadMessage {
+    bool success = 1;
+    string message = 2;
+    repeated UnreadMessage messages = 3;
+}
+
+message ReadMessageResponse {
+    oneof response {
+        ReadMessage success = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message DeleteAccountRequest {
+    string username = 1;
+    bool from_client = 2;
+}
+
+message DeleteMessageRequest {
+    string sender_username = 1;
+    string message_id = 2;
+    bool from_client = 3;
+}
+
+message FetchSentMessagesRequest {
+    string username = 1;
+}
+
+// Maps a target_username to all unread messages sent to that user
+message SentMessages {
+    string target_username = 1;
+    repeated UnreadMessage messages = 2;
+}
+
+message FetchedSentMessages {
+    bool success = 1;
+    string message = 2;
+    repeated SentMessages sent_messages = 3;
+}
+
+message FetchSentMessagesResponse {
+    oneof response {
+        FetchedSentMessages success = 1;
+        StandardServerResponse failure = 2;
+    }
+}
+
+message HeartbeatRequest {
+    int32 server_id = 1;
+    int64 timestamp = 2;
+}
+
+message HeartbeatResponse {
+    bool acknowledged = 1;
+}
+
+message CurrentLeaderRequest {
+    // This message can be empty, as we are just using it to trigger the server to send back the current leader
+}
+
+message CurrentLeaderResponse {
+    int32 leader = 1;
+}
+
+message StatusRequest {
+    int32 server_id = 1;
+}
+
+message StatusResponse {
+    bool is_dead = 1; // true if the server is dead, false if it is alive
+}
