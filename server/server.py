@@ -8,7 +8,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
+from account_management import add_album_editor, check_if_online, create_account, create_album, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
 import threading
 import os
 
@@ -568,6 +568,151 @@ class Server(server_pb2_grpc.ServerServicer):
             )
             response.failure.CopyFrom(failure)
         return response
+
+    def UploadImage(self, request_iterator, context):
+        '''
+            Handles image upload requests from clients.
+            This is a placeholder for the actual image upload logic.
+        '''
+        for request in request_iterator:
+            if request.from_client and not self.is_leader:
+                print(f"Server {self.id} is not the leader. Rejecting request.")
+                return server_pb2.StandardServerResponse(
+                    success=False, 
+                    message="You made a request to a non-leader server. Please try again later."
+                )
+
+            if request.HasField("metadata"):
+                metadata = request.metadata
+                username = metadata.username
+                image_name = metadata.image_name
+                size = metadata.size
+                file_type = metadata.file_type
+                album = metadata.album
+                print(f"Received metadata for image upload: {metadata}")
+                image_data = bytearray()
+            else:
+                image_data.extend(request.image_data)
+                
+        res = upload_image(username, image_name, file_type, album, self.db_path, image_data)
+        
+        # TODO: Forward result to other servers if necessary
+
+        print(f"Image upload result: {res}")
+        return server_pb2.StandardServerResponse(**res)
+    
+    def CreateAlbum(self, request, context):
+        '''
+            Creates a new photo album for the user
+        '''
+        username = request.username
+        album_name = request.album_name
+        from_client = request.from_client
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+        
+        print(f"Received create album request from {username} for album {album_name}")
+        res = create_album(username, album_name, self.db_path)
+
+        if res["success"] and self.is_leader:
+            # Notify other servers of new album
+            for stub in self.server_stubs.values():
+                request = server_pb2.CreateAlbumRequest(
+                    username=username, 
+                    album_name=album_name,
+                    from_client=False
+                )
+                temp_res = stub.CreateAlbum(request)
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of new album {album_name} for {username}")
+                    print(res.message)
+                    raise Exception(f"Failed to notify server {stub} of new album {album_name} for {username}")
+
+        return server_pb2.StandardServerResponse(**res)
+
+    def AddAlbumEditor(self, request, context):
+        '''
+            Adds a user as an editor to the specified album
+        '''
+        requestor_username = request.requestor_username  # The username of the user making the request
+        editor_username = request.editor_username  # The username of the user being added as an editor
+        album_name = request.album_name
+        from_client = request.from_client  
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+
+        res = add_album_editor(requestor_username, editor_username, album_name, self.db_path)
+
+        if res["success"] and self.is_leader:
+            # Notify other servers of new album editor
+            for stub in self.server_stubs.values():
+                request = server_pb2.AddAlbumEditorRequest(
+                    requestor_username=requestor_username,
+                    editor_username=editor_username,
+                    album_name=album_name,
+                    from_client=False
+                )
+                temp_res = stub.AddAlbumEditor(request)
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of new album editor {editor_username} for {album_name}")
+                    print(temp_res.message)
+                    raise Exception(f"Failed to notify server {stub} of new album editor {editor_username} for {album_name}")
+
+        return server_pb2.StandardServerResponse(**res)
+
+    def RemoveAlbumEditor(self, request, context):
+        '''
+            Removes a user as an editor from the specified album
+        '''
+
+        requestor_username = request.requestor_username  # The username of the user making the request
+        editor_username = request.editor_username  # The username of the user being added as an editor
+        album_name = request.album_name
+        from_client = request.from_client  
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+
+        res = remove_album_editor(requestor_username, editor_username, album_name, self.db_path)
+
+        if res["success"] and self.is_leader:
+            # Notify other servers of new album editor
+            for stub in self.server_stubs.values():
+                request = server_pb2.RemoveAlbumEditorRequest(
+                    requestor_username=requestor_username,
+                    editor_username=editor_username,
+                    album_name=album_name,
+                    from_client=False
+                )
+                temp_res = stub.RemoveAlbumEditor(request)
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of removed album editor {editor_username} for {album_name}")
+                    print(temp_res.message)
+                    raise Exception(f"Failed to notify server {stub} of new album editor {editor_username} for {album_name}")
+
+        return server_pb2.StandardServerResponse(**res)
+
+
 
     def cleanup(self):
         '''

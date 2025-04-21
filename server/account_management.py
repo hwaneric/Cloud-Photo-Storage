@@ -326,6 +326,162 @@ def fetch_sent_messages(username, db_path):
         sent_messages = json.load(f)
     return {"success": True, "message": "Sent messages fetched successfully.", "sent_messages": sent_messages}
 
+def upload_image(username, image_name, file_type, album_name, db_path, image_data):
+    """
+    Uploads an image for the user. The image is saved in a directory structure based on the username, 
+    file type, and album name.
+    """
+    if not username or not image_name or not file_type or not album_name:
+        return {"success": False, "message": "Username, image name, file type, and album cannot be empty."}
+
+    if file_type.lower() not in ["jpg", "jpeg", "png"]:
+        return {"success": False, "message": "Unsupported file type. Supported types are: jpg, jpeg, png, gif."}
+
+
+    album_dir = os.path.join(db_path, "albums", album_name)
+
+    if not os.path.exists(album_dir):
+        # os.makedirs(album_dir)
+        return {"success": False, "message": "Album does not exist"}
+
+    # Check if the user has permission to upload to the album
+    album_metadata_path = os.path.join(album_dir, "metadata.json")
+    if os.path.exists(album_metadata_path):
+        with open(album_metadata_path, "r") as f:
+            album_metadata = json.load(f)
+    else:
+        return {"success": False, "message": "Album metadata file not found."}
+    
+    if username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to upload to this album."}
+    
+    image_dir = os.path.join(album_dir, image_name)
+    if not os.path.exists(image_dir):
+        os.makedirs(image_dir)
+    
+    # Create metadata file for the image
+    metadata = {
+        "username": username,
+        "image_name": image_name,
+        "file_type": file_type,
+        "timestamp": time.time(),
+    }
+
+    metadata_path = os.path.join(image_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f)
+    
+    # Save the image file
+    image_path = os.path.join(image_dir, f"{image_name}.{file_type}")
+    
+    # Check if the image already exists
+    if os.path.exists(image_path):
+        return {"success": False, "message": "Image already exists."}
+
+    # Save the image 
+    with open(image_path, 'wb') as f:
+        f.write(image_data)
+
+    return {"success": True, "message": "Image uploaded successfully."}
+
+def create_album(username, album_name, db_path):
+    """
+    Creates an album for the user. The album is saved in a directory structure based on the username.
+    """
+    if not username or not album_name:
+        return {"success": False, "message": "Username and album name cannot be empty."}
+
+    user_album_dir = os.path.join(db_path, "albums", album_name)
+
+    if os.path.exists(user_album_dir):
+        return {"success": False, "message": "Album with given name already exists."}
+
+    os.makedirs(user_album_dir)
+
+    # Create metadata file for the album
+    metadata = {
+        "creator": username,
+        "album_name": album_name,
+        "timestamp": time.time(),
+        "editors": [username],
+    }
+    metadata_path = os.path.join(user_album_dir, "metadata.json")
+    with open(metadata_path, "w") as f:
+        json.dump(metadata, f)
+    
+    # Update user profile with newly created album
+    existing_users = load_user_data(db_path)
+    existing_users[username]["albums"].append(album_name)
+    save_user_data(existing_users, db_path)
+
+    return {"success": True, "message": "Album created successfully."}
+
+def add_album_editor(requestor_username, editor_username, album_name, db_path):
+    album_dir = os.path.join(db_path, "albums", album_name)
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+    
+    existing_users = load_user_data(db_path)
+    if editor_username not in existing_users:
+        return {"success": False, "message": "Editor username does not exist."}
+    
+    # Check if the requestor is the creator of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+
+    if requestor_username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to add editors to this album."}
+
+    if editor_username in album_metadata["editors"]:
+        return {"success": False, "message": "Editor already exists in the album."}
+    
+    album_metadata["editors"].append(editor_username)
+    with open(metadata_path, "w") as f:
+        json.dump(album_metadata, f)
+
+    # Update the user's profile to include the album
+    existing_users[editor_username]["albums"].append(album_name)
+    save_user_data(existing_users, db_path)
+
+    return {"success": True, "message": f"{editor_username} added as editor to {album_name}."}
+
+def remove_album_editor(requestor_username, editor_username, album_name, db_path):
+    album_dir = os.path.join(db_path, "albums", album_name)
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+    
+    existing_users = load_user_data(db_path)
+    if editor_username not in existing_users:
+        return {"success": False, "message": "Editor username does not exist."}
+    
+    # Check if the requestor is the creator of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+
+    if editor_username == album_metadata["creator"]:
+        return {"success": False, "message": "Cannot remove the creator of the album."}
+    
+    if requestor_username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to remove editors to this album."}
+
+    if editor_username not in album_metadata["editors"]:
+        return {"success": False, "message": "The person you are trying to remove does not have access to the album."}
+    
+    album_metadata["editors"].remove(editor_username)
+    with open(metadata_path, "w") as f:
+        json.dump(album_metadata, f)
+
+    # Update the user's profile to include the album
+    existing_users[editor_username]["albums"].remove(album_name)
+    save_user_data(existing_users, db_path)
+
+    return {"success": True, "message": f"{editor_username} removed as editor from {album_name}."}
 
 def get_db_pathname():
     current_dir = os.path.dirname(__file__)
@@ -337,3 +493,5 @@ def get_user_data_pathname():
     db_pathname = get_db_pathname()
     user_data_pathname = os.path.join(db_pathname, USER_DATA_FILE)
     return user_data_pathname
+
+    

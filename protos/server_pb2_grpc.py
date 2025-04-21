@@ -99,6 +99,26 @@ class ServerStub(object):
                 request_serializer=server__pb2.StatusRequest.SerializeToString,
                 response_deserializer=server__pb2.StatusResponse.FromString,
                 _registered_method=True)
+        self.UploadImage = channel.stream_unary(
+                '/server.Server/UploadImage',
+                request_serializer=server__pb2.UploadImageRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.CreateAlbum = channel.unary_unary(
+                '/server.Server/CreateAlbum',
+                request_serializer=server__pb2.CreateAlbumRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.AddAlbumEditor = channel.unary_unary(
+                '/server.Server/AddAlbumEditor',
+                request_serializer=server__pb2.AddAlbumEditorRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.RemoveAlbumEditor = channel.unary_unary(
+                '/server.Server/RemoveAlbumEditor',
+                request_serializer=server__pb2.RemoveAlbumEditorRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
 
 
 class ServerServicer(object):
@@ -182,6 +202,30 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UploadImage(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateAlbum(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AddAlbumEditor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RemoveAlbumEditor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -249,6 +293,26 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.ConfirmServerDeath,
                     request_deserializer=server__pb2.StatusRequest.FromString,
                     response_serializer=server__pb2.StatusResponse.SerializeToString,
+            ),
+            'UploadImage': grpc.stream_unary_rpc_method_handler(
+                    servicer.UploadImage,
+                    request_deserializer=server__pb2.UploadImageRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'CreateAlbum': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateAlbum,
+                    request_deserializer=server__pb2.CreateAlbumRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'AddAlbumEditor': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddAlbumEditor,
+                    request_deserializer=server__pb2.AddAlbumEditorRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'RemoveAlbumEditor': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveAlbumEditor,
+                    request_deserializer=server__pb2.RemoveAlbumEditorRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -602,6 +666,114 @@ class Server(object):
             '/server.Server/ConfirmServerDeath',
             server__pb2.StatusRequest.SerializeToString,
             server__pb2.StatusResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UploadImage(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            '/server.Server/UploadImage',
+            server__pb2.UploadImageRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateAlbum(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/CreateAlbum',
+            server__pb2.CreateAlbumRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AddAlbumEditor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/AddAlbumEditor',
+            server__pb2.AddAlbumEditorRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RemoveAlbumEditor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/RemoveAlbumEditor',
+            server__pb2.RemoveAlbumEditorRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
             options,
             channel_credentials,
             insecure,
