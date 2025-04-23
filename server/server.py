@@ -8,10 +8,9 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import add_album_editor, check_if_online, create_account, create_album, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
+from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_photos, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
 import threading
 import os
-
 
 class Server(server_pb2_grpc.ServerServicer):
     def __init__(self, id, host, port, db_path=None):
@@ -712,7 +711,141 @@ class Server(server_pb2_grpc.ServerServicer):
 
         return server_pb2.StandardServerResponse(**res)
 
+    def DeleteAlbum(self, request, context):
+        '''
+            Deletes the specified album
+        '''
+        username = request.username
+        album_name = request.album_name
+        from_client = request.from_client
 
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+        
+        print(f"Received delete album request from {username} for album {album_name}")
+        res = delete_album(username, album_name, self.db_path)
+
+        if res["success"] and self.is_leader:
+            # Notify other servers of delete album
+            for stub in self.server_stubs.values():
+                request = server_pb2.DeleteAlbumRequest(
+                    username=username, 
+                    album_name=album_name,
+                    from_client=False
+                )
+                temp_res = stub.DeleteAlbum(request)
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of delete album {album_name} for {username}")
+                    print(res.message)
+                    raise Exception(f"Failed to notify server {stub} of delete album {album_name} for {username}")
+
+        return server_pb2.StandardServerResponse(**res)
+    
+    def DeleteImage(self, request, context):
+        '''
+            Deletes the specified image from the album
+        '''
+        username = request.username
+        album_name = request.album_name
+        image_name = request.image_name
+        from_client = request.from_client
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+        print(f"Received delete image request from {username} for image {image_name} in album {album_name}")
+
+        # TODO: Implement delete_image
+        res = delete_image(username, image_name, album_name, self.db_path)
+        if res["success"] and self.is_leader:
+            # Notify other servers of delete image
+            for stub in self.server_stubs.values():
+                request = server_pb2.DeleteImageRequest(
+                    username=username, 
+                    album_name=album_name,
+                    image_name=image_name,
+                    from_client=False
+                )
+                temp_res = stub.DeleteImage(request)
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of delete image {image_name} in album {album_name} for {username}")
+                    print(temp_res.message)
+                    raise Exception(f"Failed to notify server {stub} of delete image {image_name} in album {album_name} for {username}")
+
+        return server_pb2.StandardServerResponse(**res)
+    
+    def FetchPhotos(self, request, context):
+        '''
+            Fetches photos from the specified album
+        '''
+        username = request.username
+        album_name = request.album_name
+        page = request.page
+        page_size = request.page_size
+        from_client = request.from_client
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+        
+        print(f"Received fetch photos request from {username} for album {album_name}")
+        res = fetch_photos(username, album_name, page, page_size, self.db_path)
+        print(res)
+        return self._generate_image_stream(album_name, res["images"])
+        
+    def _generate_image_stream(self, album_name, images):
+        '''
+            Generates a stream of image data to be sent to the client
+        '''
+        print(f"Generating image stream for album {album_name} with {len(images)} images")
+        for image in images:
+            # Send image metadata first
+            image_path = image["image_path"]
+            metadata = image["metadata"]
+
+            metadata_message = server_pb2.ImageMetadata(
+                username=metadata['username'],
+                album=album_name,
+                image_name=metadata['image_name'],
+                size=-1, # TODO: UPDATE THIS PLACEHOLDER
+                file_type=metadata['file_type']
+            )
+
+            server_response = server_pb2.ImageChunk()
+            server_response.metadata.CopyFrom(metadata_message)
+            server_response.from_client = False
+
+            yield server_response
+
+            # Read the image data in chunks
+            with open(image_path, 'rb') as f:
+                while True:
+                    CHUNK_SIZE = 1024 * 1024 # 1 megabyte
+                    chunk = f.read(CHUNK_SIZE)
+                    if not chunk:
+                        break
+
+                    yield server_pb2.ImageChunk(
+                        image_data=chunk,
+                        from_client=False,
+                    )
+            
 
     def cleanup(self):
         '''

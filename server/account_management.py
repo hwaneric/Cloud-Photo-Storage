@@ -4,6 +4,7 @@ import re
 import time
 import uuid
 import bcrypt
+import shutil
 
 USER_DATA_FILE = "user_data.json"
 
@@ -482,6 +483,127 @@ def remove_album_editor(requestor_username, editor_username, album_name, db_path
     save_user_data(existing_users, db_path)
 
     return {"success": True, "message": f"{editor_username} removed as editor from {album_name}."}
+
+def delete_album(username, album_name, db_path):
+    """
+    Deletes an album for the user. The album is deleted from the directory structure based on the username.
+    """
+    if not username or not album_name:
+        return {"success": False, "message": "Username and album name cannot be empty."}
+
+    album_dir = os.path.join(db_path, "albums", album_name)
+
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+
+    # Check if the user is the creator of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+
+    if album_metadata["creator"] != username:
+        return {"success": False, "message": "You do not have permission to delete this album."}
+
+    # Delete the album directory
+    shutil.rmtree(album_dir)
+
+    # Update user profile to remove the deleted album
+    existing_users = load_user_data(db_path)
+    existing_users[username]["albums"].remove(album_name)
+    save_user_data(existing_users, db_path)
+
+    return {"success": True, "message": "Album deleted successfully."}
+
+def delete_image(username, image_name, album_name, db_path):
+    '''
+        Deletes an image from an album
+    '''
+    if not username or not album_name:
+        return {"success": False, "message": "Username and album name cannot be empty."}
+
+    album_dir = os.path.join(db_path, "albums", album_name)
+
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+
+    # Check if the user is editor of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+    if username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to delete images from this album."}
+    
+    image_dir = os.path.join(album_dir, image_name)
+    if not os.path.exists(image_dir):
+        return {"success": False, "message": "Image does not exist."}
+    image_metadata_path = os.path.join(image_dir, "metadata.json")
+    with open(image_metadata_path, "r") as f:
+        image_metadata = json.load(f)
+
+    if image_metadata["username"] != username:
+        return {"success": False, "message": "You do not have permission to delete this image because you are not the initial image creator."}
+    
+    # Delete the image directory
+    shutil.rmtree(image_dir)
+    return {"success": True, "message": "Image deleted successfully."}
+
+def fetch_photos(username, album_name, page, page_size, db_path):
+    '''
+        Fetches photos from an album. Returns a list of photos with pagination.
+    '''
+    if not username or not album_name:
+        return {"success": False, "message": "Username and album name cannot be empty."}
+
+    album_dir = os.path.join(db_path, "albums", album_name)
+
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+
+    # Check if the user is editor of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+    if username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to fetch images from this album."}
+
+    # Fetch all images in the album
+    images = []
+    for root, dirs, files in os.walk(album_dir):
+        for file in files:
+            if file.endswith(('.jpg', '.jpeg', '.png', '.gif')):
+                image_path = os.path.join(root, file)
+                metadata_path = os.path.join(root, "metadata.json")
+                if os.path.exists(metadata_path):
+                    with open(metadata_path, "r") as f:
+                        metadata = json.load(f)
+                    images.append({
+                        "image_path": image_path,
+                        "metadata": metadata,
+                    })
+
+    # Sort images by timestamp
+    images.sort(key=lambda x: x["metadata"]["timestamp"])
+
+    # Implement pagination
+    start_index = (page) * page_size
+    if start_index >= len(images):
+        return {"success": False, "message": "No more images to display."}
+    
+    end_index = min(start_index + page_size, len(images))
+    paginated_images = images[start_index:end_index]
+    return {
+        "success": True, 
+        "message": "Images fetched successfully.", 
+        "images": paginated_images,
+    }
+
 
 def get_db_pathname():
     current_dir = os.path.dirname(__file__)
