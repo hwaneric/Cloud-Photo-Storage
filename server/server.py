@@ -595,7 +595,7 @@ class Server(server_pb2_grpc.ServerServicer):
                 
         res = upload_image(username, image_name, file_type, album, self.db_path, image_data)
         
-        # TODO: Forward result to other servers if necessary
+        # Forward result to other servers if necessary
         if res["success"] and self.is_leader:
             for stub in self.server_stubs.values():
                 print("metadata", metadata)
@@ -781,8 +781,8 @@ class Server(server_pb2_grpc.ServerServicer):
             return server_response
         print(f"Received delete image request from {username} for image {image_name} in album {album_name}")
 
-        # TODO: Implement delete_image
         res = delete_image(username, image_name, album_name, self.db_path)
+
         if res["success"] and self.is_leader:
             # Notify other servers of delete image
             for stub in self.server_stubs.values():
@@ -821,7 +821,6 @@ class Server(server_pb2_grpc.ServerServicer):
         
         print(f"Received fetch photos request from {username} for album {album_name}")
         res = fetch_photos(username, album_name, page, page_size, self.db_path)
-        print(res)
         return self._generate_image_stream(album_name, res["images"])
     
     def FetchUserAlbums(self, request, context):
