@@ -383,7 +383,7 @@ def upload_image(username, image_name, file_type, album_name, db_path, image_dat
     with open(image_path, 'wb') as f:
         f.write(image_data)
 
-    return {"success": True, "message": "Image uploaded successfully."}
+    return {"success": True, "message": "Image uploaded successfully.", "image_path": image_path}
 
 def create_album(username, album_name, db_path):
     """
@@ -603,6 +603,25 @@ def fetch_photos(username, album_name, page, page_size, db_path):
         "message": "Images fetched successfully.", 
         "images": paginated_images,
     }
+
+def fetch_albums(username, db_path): 
+    '''
+        Fetches all albums for a user.
+    '''
+    if not username:
+        return {"success": False, "message": "Username cannot be empty."}
+    users = load_user_data(db_path)
+
+    if username not in users:
+        return {"success": False, "message": "User does not exist."}
+    
+    user_albums = users[username].get("albums", [])
+    return {
+        "success": True, 
+        "message": "Albums fetched successfully.", 
+        "albums": user_albums,
+    }
+
 
 
 def get_db_pathname():

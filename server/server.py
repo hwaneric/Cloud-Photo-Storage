@@ -8,7 +8,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_photos, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
+from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_albums, fetch_photos, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
 import threading
 import os
 
@@ -596,10 +596,25 @@ class Server(server_pb2_grpc.ServerServicer):
         res = upload_image(username, image_name, file_type, album, self.db_path, image_data)
         
         # TODO: Forward result to other servers if necessary
+        if res["success"] and self.is_leader:
+            for stub in self.server_stubs.values():
+                print("metadata", metadata)
+                metadata = {"username": username, "image_name": image_name, "file_type": file_type, }
+                temp_res = stub.UploadImage(
+                    self._generate_image_stream(
+                        album, 
+                        [{"image_path": res["image_path"], "metadata": metadata}]
+                    )
+                )
+                if not temp_res.success:
+                    print(f"Failed to notify server {stub} of image upload for {username}")
+                    print(res.message)
+                    raise Exception(f"Failed to notify server {stub} of image upload for {username}")
 
         print(f"Image upload result: {res}")
-        return server_pb2.StandardServerResponse(**res)
+        return server_pb2.StandardServerResponse(success=res["success"], message=res["message"])
     
+
     def CreateAlbum(self, request, context):
         '''
             Creates a new photo album for the user
@@ -808,12 +823,33 @@ class Server(server_pb2_grpc.ServerServicer):
         res = fetch_photos(username, album_name, page, page_size, self.db_path)
         print(res)
         return self._generate_image_stream(album_name, res["images"])
+    
+    def FetchUserAlbums(self, request, context):
+        '''
+            Fetches all albums for the specified user
+        '''
+        username = request.username
+        from_client = request.from_client
+
+        # If non-leader server receives request from a client, reject
+        if from_client and not self.is_leader:
+            print(f"Server {self.id} is not the leader. Rejecting request.")
+            server_response = server_pb2.StandardServerResponse(
+                success=False, 
+                message="You made a request to a non-leader server. Please try again later."
+            )
+            return server_response
+        
+        print(f"Received fetch albums request from {username}")
+        res = fetch_albums(username, self.db_path)
+        return server_pb2.FetchUserAlbumsResponse(**res)
         
     def _generate_image_stream(self, album_name, images):
         '''
-            Generates a stream of image data to be sent to the client
+            Generates a stream of image data to be sent to the client.
+            album_name (str): The name of the album to fetch images from.
+            images (list): A list of dictionaries containing image metadata and path to image.
         '''
-        print(f"Generating image stream for album {album_name} with {len(images)} images")
         for image in images:
             # Send image metadata first
             image_path = image["image_path"]
@@ -826,7 +862,7 @@ class Server(server_pb2_grpc.ServerServicer):
                 size=-1, # TODO: UPDATE THIS PLACEHOLDER
                 file_type=metadata['file_type']
             )
-
+            
             server_response = server_pb2.ImageChunk()
             server_response.metadata.CopyFrom(metadata_message)
             server_response.from_client = False
@@ -845,7 +881,6 @@ class Server(server_pb2_grpc.ServerServicer):
                         image_data=chunk,
                         from_client=False,
                     )
-            
 
     def cleanup(self):
         '''
