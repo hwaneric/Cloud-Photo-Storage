@@ -16,7 +16,14 @@ service Server {
     rpc Heartbeat(stream HeartbeatRequest) returns (HeartbeatResponse);
     rpc CurrentLeader(CurrentLeaderRequest) returns (CurrentLeaderResponse);
     rpc ConfirmServerDeath(StatusRequest) returns (StatusResponse);
-
+    rpc UploadImage(stream ImageChunk) returns (StandardServerResponse);
+    rpc CreateAlbum(CreateAlbumRequest) returns (StandardServerResponse);
+    rpc AddAlbumEditor(AddAlbumEditorRequest) returns (StandardServerResponse);
+    rpc RemoveAlbumEditor(RemoveAlbumEditorRequest) returns (StandardServerResponse);
+    rpc DeleteAlbum(DeleteAlbumRequest) returns (StandardServerResponse);
+    rpc DeleteImage(DeleteImageRequest) returns (StandardServerResponse);
+    rpc FetchPhotos(FetchPhotosRequest) returns (stream ImageChunk);
+    rpc FetchUserAlbums(FetchUserAlbumsRequest) returns (FetchUserAlbumsResponse);
 }
 
 message StandardServerResponse {
@@ -164,4 +171,72 @@ message StatusRequest {
 
 message StatusResponse {
     bool is_dead = 1; // true if the server is dead, false if it is alive
+}
+
+message ImageMetadata {
+    string username = 1; // The username of the user who uploaded the image
+    string image_name = 2; // The name of the image file
+    int32 size = 3; // Size of the image in bytes
+    string file_type = 4; // Type of the image file (e.g., "image/png", "image/jpeg")
+    string album = 5; // Album that the image belongs to
+}
+
+message ImageChunk {
+    oneof payload {
+        ImageMetadata metadata = 1; // Metadata about the image
+        bytes image_data = 2; // The actual image data
+    }
+    bool from_client = 3; // Indicates if the request is from a client
+}
+
+message CreateAlbumRequest {
+    string username = 1; // The username of the user creating the album
+    string album_name = 2; // The name of the album being created
+    bool from_client = 3; // Indicates if the request is from a client
+}
+
+message AddAlbumEditorRequest {
+    string requestor_username = 1; // The username of the user who is making the "add editor" request
+    string editor_username = 2; // The username of the user being added as an editor
+    string album_name = 3; // The name of the album to which the editor is being added
+    bool from_client = 4; // Indicates if the request is from a client
+}
+
+message RemoveAlbumEditorRequest {
+    string requestor_username = 1; // The username of the user who is making the "add editor" request
+    string editor_username = 2; // The username of the user being added as an editor
+    string album_name = 3; // The name of the album to which the editor is being added
+    bool from_client = 4; // Indicates if the request is from a client
+}
+
+message DeleteAlbumRequest {
+    string username = 1; // The username of the user deleting the album
+    string album_name = 2; // The name of the album being deleted
+    bool from_client = 3; // Indicates if the request is from a client
+}
+
+message DeleteImageRequest {
+    string username = 1; // The username of the user deleting the image
+    string image_name = 2; // The name of the image being deleted
+    string album_name = 3; // The name of the album from which the image is being deleted
+    bool from_client = 4; // Indicates if the request is from a client
+}
+
+message FetchPhotosRequest {
+    string username = 1; // The username of the user fetching photos
+    string album_name = 2; // The name of the album from which photos are being fetched
+    int32 page = 3; // The page number for pagination
+    int32 page_size = 4; // The number of photos per page
+    bool from_client = 5; // Indicates if the request is from a client
+}
+
+message FetchUserAlbumsRequest {
+    string username = 1; // The username of the user whose albums are being fetched
+    bool from_client = 2; // Indicates if the request is from a client
+}
+
+message FetchUserAlbumsResponse {
+    bool success = 1; // Indicates if the request was successful
+    string message = 2; // A message providing additional information
+    repeated string albums = 3; // A list of album names owned by the user
 }
