@@ -330,33 +330,16 @@ class Client:
     @retry_on_failure()
     def get_album_editors(self, album_name):
         """Get the list of editors for an album."""
-        try:
-            # First get the album metadata using FetchUserAlbums
-            request = server_pb2.FetchUserAlbumsRequest(
-                username=self.username,
-                from_client=True
-            )
-            response = self.stubs[self.leader].FetchUserAlbums(request)
-            
-            if not response.success:
-                print(f"Error getting album editors: {response.message}")
-                return []
-                
-            # Find the album in the list and get its metadata
-            for album in response.albums:
-                if album == album_name:
-                    # Get the album metadata from the server
-                    db_path = os.getenv(f"DB_PATH_{self.leader}")
-                    if not db_path:
-                        db_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), f"db_{self.leader}")
-                    album_dir = os.path.join(db_path, "albums", album_name)
-                    metadata_path = os.path.join(album_dir, "metadata.json")
-                    if os.path.exists(metadata_path):
-                        with open(metadata_path, "r") as f:
-                            metadata = json.load(f)
-                        return metadata.get("editors", [])
-            return []
-        except Exception as e:
-            print(f"Error getting album editors: {str(e)}")
-            return []
+        request = {
+            "username": self.username,
+            "album_name": album_name,
+            "from_client": True,
+        }
+        request = server_pb2.FetchAlbumEditorsRequest(**request)
+        res = self.stubs[self.leader].FetchAlbumEditors(request)
+        
+        if res.success:
+            return res.success, res.editors
+        else:
+            return res.success, res.message
  

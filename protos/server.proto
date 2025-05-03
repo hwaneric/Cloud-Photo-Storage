@@ -24,6 +24,7 @@ service Server {
     rpc DeleteImage(DeleteImageRequest) returns (StandardServerResponse);
     rpc FetchPhotos(FetchPhotosRequest) returns (stream ImageChunk);
     rpc FetchUserAlbums(FetchUserAlbumsRequest) returns (FetchUserAlbumsResponse);
+    rpc FetchAlbumEditors(FetchUserAlbumsRequest) returns (FetchUserAlbumsResponse);
 }
 
 message StandardServerResponse {
@@ -239,4 +240,15 @@ message FetchUserAlbumsResponse {
     bool success = 1; // Indicates if the request was successful
     string message = 2; // A message providing additional information
     repeated string albums = 3; // A list of album names owned by the user
+}
+
+message FetchAlbumEditorsRequest {
+    string username = 1; // The username of the user whose album editors are being fetched
+    string album_name = 2; // The name of the album for which editors are being fetched
+}
+
+message FetchAlbumEditorsResponse {
+    bool success = 1; // Indicates if the request was successful
+    string message = 2; // A message providing additional information
+    repeated string editors = 3; // A list of usernames of users who can edit the album
 }

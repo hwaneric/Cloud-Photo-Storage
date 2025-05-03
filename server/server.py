@@ -8,7 +8,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_albums, fetch_photos, list_accounts, login, logout, logout_all_users, remove_album_editor, delete_account, upload_image
+from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_album_editors, fetch_albums, fetch_photos, list_accounts, login, logout, logout_all_users, remove_album_editor, delete_account, upload_image
 import threading
 import os
 
@@ -720,6 +720,22 @@ class Server(server_pb2_grpc.ServerServicer):
                         image_data=chunk,
                         from_client=False,
                     )
+
+    def FetchAlbumEditors(self, request, context):
+        '''
+            Fetches all editors for the specified album
+        '''
+        username = request.username
+        album_name = request.album_name
+
+        
+        print(f"Received fetch album editors request from {username} for album {album_name}")
+        res = fetch_album_editors(username, album_name, self.db_path)
+        
+        if not res["success"]:
+            return server_pb2.FetchAlbumEditorsResponse(success=False, message=res["message"], editors=[])
+
+        return server_pb2.FetchAlbumEditorsResponse(**res)
 
     def cleanup(self):
         '''

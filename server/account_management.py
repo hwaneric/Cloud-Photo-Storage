@@ -506,6 +506,35 @@ def fetch_albums(username, db_path):
         "success": True, 
         "message": "Albums fetched successfully.", 
         "albums": user_albums,
+    }   
+
+def fetch_album_editors(username, album_name, db_path):
+    '''
+        Fetches all editors for an album.
+    '''
+    if not username or not album_name:
+        return {"success": False, "message": "Username and album name cannot be empty."}
+
+    album_dir = os.path.join(db_path, "albums", album_name)
+
+    if not os.path.exists(album_dir):
+        return {"success": False, "message": "Album does not exist."}
+
+    # Check if the user is editor of the album
+    metadata_path = os.path.join(album_dir, "metadata.json")
+    if not os.path.exists(metadata_path):
+        return {"success": False, "message": "Album metadata file not found."}
+    
+    with open(metadata_path, "r") as f:
+        album_metadata = json.load(f)
+    
+    if username not in album_metadata["editors"]:
+        return {"success": False, "message": "You do not have permission to fetch editors from this album."}
+
+    return {
+        "success": True, 
+        "message": "Editors fetched successfully.", 
+        "editors": album_metadata["editors"],
     }
 
 def get_db_pathname():
