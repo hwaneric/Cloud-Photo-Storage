@@ -15,7 +15,7 @@ import os
 class Server(server_pb2_grpc.ServerServicer):
     def __init__(self, id, host, port, db_path=None):
         # Map of username to client stub for sending messages to clients that must be delivered immediately
-        self.stub_map = {} 
+        # self.stub_map = {} 
 
         # Map of Stubs to Peer Servers 
         self.server_stubs = {}
@@ -293,8 +293,8 @@ class Server(server_pb2_grpc.ServerServicer):
                     raise Exception(f"Failed to notify server {stub} of new user {username}")
 
 
-        if username in self.stub_map:
-            del self.stub_map[username]
+        # if username in self.stub_map:
+        #     del self.stub_map[username]
 
         return server_pb2.StandardServerResponse(**res)
 
@@ -321,46 +321,46 @@ class Server(server_pb2_grpc.ServerServicer):
         
         return server_response
     
-    def RegisterClient(self, request, context):
-        '''
-            Registers a client stub to the server for sending messages to the client
-        '''
-        username = request.username
-        host = request.host
-        port = request.port
-        from_client = request.from_client
+    # def RegisterClient(self, request, context):
+    #     '''
+    #         Registers a client stub to the server for sending messages to the client
+    #     '''
+    #     username = request.username
+    #     host = request.host
+    #     port = request.port
+    #     from_client = request.from_client
 
-        # If non-leader server receives request from a client, reject
-        if from_client and not self.is_leader:
-            print(f"Server {self.id} is not the leader. Rejecting request.")
-            server_response = server_pb2.StandardServerResponse(
-                success=False, 
-                message="You made a request to a non-leader server. Please try again later."
-            )
-            return server_response
+    #     # If non-leader server receives request from a client, reject
+    #     if from_client and not self.is_leader:
+    #         print(f"Server {self.id} is not the leader. Rejecting request.")
+    #         server_response = server_pb2.StandardServerResponse(
+    #             success=False, 
+    #             message="You made a request to a non-leader server. Please try again later."
+    #         )
+    #         return server_response
 
-        channel = grpc.insecure_channel(f"{host}:{port}")
-        stub = client_listener_pb2_grpc.Client_ListenerStub(channel)
-        print(f"Received register client request from {username}")
+    #     channel = grpc.insecure_channel(f"{host}:{port}")
+    #     stub = client_listener_pb2_grpc.Client_ListenerStub(channel)
+    #     print(f"Received register client request from {username}")
 
-        self.stub_map[username] = stub
+    #     self.stub_map[username] = stub
 
-        if self.is_leader:
-            # Notify other servers of new client
-            for stub in self.server_stubs.values():
-                request = server_pb2.RegisterClientRequest(
-                    username=username, 
-                    host=host, 
-                    port=port,
-                    from_client=False
-                )
-                temp_res = stub.RegisterClient(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of new client registration {username}")
-                    print(temp_res.message)
-                    raise Exception(f"Failed to notify server {stub} of new client registration {username}")
+    #     if self.is_leader:
+    #         # Notify other servers of new client
+    #         for stub in self.server_stubs.values():
+    #             request = server_pb2.RegisterClientRequest(
+    #                 username=username, 
+    #                 host=host, 
+    #                 port=port,
+    #                 from_client=False
+    #             )
+    #             temp_res = stub.RegisterClient(request)
+    #             if not temp_res.success:
+    #                 print(f"Failed to notify server {stub} of new client registration {username}")
+    #                 print(temp_res.message)
+    #                 raise Exception(f"Failed to notify server {stub} of new client registration {username}")
                 
-        return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
+    #     return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
 
     def DeleteAccount(self, request, context):
         username = request.username
@@ -391,9 +391,6 @@ class Server(server_pb2_grpc.ServerServicer):
                     print(res.message)
                     raise Exception(f"Failed to notify server {stub} of delete account for {username}")
 
-        if username in self.stub_map:
-            del self.stub_map[username]
-        
         return server_pb2.StandardServerResponse(**res)
 
     def UploadImage(self, request_iterator, context):

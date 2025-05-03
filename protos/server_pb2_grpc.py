@@ -54,35 +54,10 @@ class ServerStub(object):
                 request_serializer=server__pb2.ListUsernamesRequest.SerializeToString,
                 response_deserializer=server__pb2.ListUsernamesResponse.FromString,
                 _registered_method=True)
-        self.SendMessage = channel.unary_unary(
-                '/server.Server/SendMessage',
-                request_serializer=server__pb2.SendMessageRequest.SerializeToString,
-                response_deserializer=server__pb2.StandardServerResponse.FromString,
-                _registered_method=True)
-        self.RegisterClient = channel.unary_unary(
-                '/server.Server/RegisterClient',
-                request_serializer=server__pb2.RegisterClientRequest.SerializeToString,
-                response_deserializer=server__pb2.StandardServerResponse.FromString,
-                _registered_method=True)
-        self.ReadMessages = channel.unary_unary(
-                '/server.Server/ReadMessages',
-                request_serializer=server__pb2.ReadMessagesRequest.SerializeToString,
-                response_deserializer=server__pb2.ReadMessageResponse.FromString,
-                _registered_method=True)
         self.DeleteAccount = channel.unary_unary(
                 '/server.Server/DeleteAccount',
                 request_serializer=server__pb2.DeleteAccountRequest.SerializeToString,
                 response_deserializer=server__pb2.StandardServerResponse.FromString,
-                _registered_method=True)
-        self.DeleteMessage = channel.unary_unary(
-                '/server.Server/DeleteMessage',
-                request_serializer=server__pb2.DeleteMessageRequest.SerializeToString,
-                response_deserializer=server__pb2.StandardServerResponse.FromString,
-                _registered_method=True)
-        self.FetchSentMessages = channel.unary_unary(
-                '/server.Server/FetchSentMessages',
-                request_serializer=server__pb2.FetchSentMessagesRequest.SerializeToString,
-                response_deserializer=server__pb2.FetchSentMessagesResponse.FromString,
                 _registered_method=True)
         self.Heartbeat = channel.stream_unary(
                 '/server.Server/Heartbeat',
@@ -173,44 +148,19 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
-    def SendMessage(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def RegisterClient(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def ReadMessages(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
     def DeleteAccount(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def DeleteMessage(self, request, context):
-        """Missing associated documentation comment in .proto file."""
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
-    def FetchSentMessages(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """rpc SendMessage(SendMessageRequest) returns (StandardServerResponse);
+        rpc RegisterClient(RegisterClientRequest) returns (StandardServerResponse);
+        rpc ReadMessages(ReadMessagesRequest) returns (ReadMessageResponse);
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
     def Heartbeat(self, request_iterator, context):
-        """Missing associated documentation comment in .proto file."""
+        """rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
+        rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -304,35 +254,10 @@ def add_ServerServicer_to_server(servicer, server):
                     request_deserializer=server__pb2.ListUsernamesRequest.FromString,
                     response_serializer=server__pb2.ListUsernamesResponse.SerializeToString,
             ),
-            'SendMessage': grpc.unary_unary_rpc_method_handler(
-                    servicer.SendMessage,
-                    request_deserializer=server__pb2.SendMessageRequest.FromString,
-                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
-            ),
-            'RegisterClient': grpc.unary_unary_rpc_method_handler(
-                    servicer.RegisterClient,
-                    request_deserializer=server__pb2.RegisterClientRequest.FromString,
-                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
-            ),
-            'ReadMessages': grpc.unary_unary_rpc_method_handler(
-                    servicer.ReadMessages,
-                    request_deserializer=server__pb2.ReadMessagesRequest.FromString,
-                    response_serializer=server__pb2.ReadMessageResponse.SerializeToString,
-            ),
             'DeleteAccount': grpc.unary_unary_rpc_method_handler(
                     servicer.DeleteAccount,
                     request_deserializer=server__pb2.DeleteAccountRequest.FromString,
                     response_serializer=server__pb2.StandardServerResponse.SerializeToString,
-            ),
-            'DeleteMessage': grpc.unary_unary_rpc_method_handler(
-                    servicer.DeleteMessage,
-                    request_deserializer=server__pb2.DeleteMessageRequest.FromString,
-                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
-            ),
-            'FetchSentMessages': grpc.unary_unary_rpc_method_handler(
-                    servicer.FetchSentMessages,
-                    request_deserializer=server__pb2.FetchSentMessagesRequest.FromString,
-                    response_serializer=server__pb2.FetchSentMessagesResponse.SerializeToString,
             ),
             'Heartbeat': grpc.stream_unary_rpc_method_handler(
                     servicer.Heartbeat,
@@ -514,87 +439,6 @@ class Server(object):
             _registered_method=True)
 
     @staticmethod
-    def SendMessage(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/server.Server/SendMessage',
-            server__pb2.SendMessageRequest.SerializeToString,
-            server__pb2.StandardServerResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def RegisterClient(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/server.Server/RegisterClient',
-            server__pb2.RegisterClientRequest.SerializeToString,
-            server__pb2.StandardServerResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def ReadMessages(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/server.Server/ReadMessages',
-            server__pb2.ReadMessagesRequest.SerializeToString,
-            server__pb2.ReadMessageResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
     def DeleteAccount(request,
             target,
             options=(),
@@ -611,60 +455,6 @@ class Server(object):
             '/server.Server/DeleteAccount',
             server__pb2.DeleteAccountRequest.SerializeToString,
             server__pb2.StandardServerResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def DeleteMessage(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/server.Server/DeleteMessage',
-            server__pb2.DeleteMessageRequest.SerializeToString,
-            server__pb2.StandardServerResponse.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)
-
-    @staticmethod
-    def FetchSentMessages(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/server.Server/FetchSentMessages',
-            server__pb2.FetchSentMessagesRequest.SerializeToString,
-            server__pb2.FetchSentMessagesResponse.FromString,
             options,
             channel_credentials,
             insecure,

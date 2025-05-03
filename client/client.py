@@ -21,10 +21,9 @@ import json
 load_dotenv(override=True)
 
 class Client:
-    def __init__(self, server_host, server_port, client_host, username=None):
+    def __init__(self, server_host, server_port, username=None):
         self.server_host = server_host
         self.server_port = server_port
-        self.client_host = client_host
 
         self.username = username
 

@@ -10,7 +10,6 @@ import io
 load_dotenv(override=True)
 SERVER_HOST = os.getenv("SERVER_HOST_0")
 SERVER_PORT = int(os.getenv("SERVER_PORT_0"))
-CLIENT_HOST = os.getenv("CLIENT_HOST")
 
 class PhotoApp:
     def __init__(self, root, client):
@@ -979,8 +978,7 @@ class PhotoApp:
 
 if __name__ == "__main__":
     try:
-        print("CLIENT HOST:", CLIENT_HOST)
-        client = Client(SERVER_HOST, SERVER_PORT, CLIENT_HOST)
+        client = Client(SERVER_HOST, SERVER_PORT)
         root = tk.Tk()
         app = PhotoApp(root, client)
         root.mainloop()
