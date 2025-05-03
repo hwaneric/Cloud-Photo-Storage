@@ -8,7 +8,6 @@ import sys
 import grpc
 from concurrent import futures
 from decorators import retry_on_failure
-from client_listener import Client_Listener
 sys.path.append('../protos')
 import server_pb2
 import server_pb2_grpc
@@ -17,6 +16,7 @@ import client_listener_pb2_grpc
 
 from dotenv import load_dotenv
 import os
+import json
 
 load_dotenv(override=True)
 
@@ -103,23 +103,6 @@ class Client:
         else:
             res = response.failure
             return res.success, res.message
-
-    @retry_on_failure()
-    def message(self, target_username, message):
-        '''
-            Sends a message to the target username.
-        '''
-
-        request = {
-            "sender_username": self.username, 
-            "target_username": target_username, 
-            "timestamp": int(time.time()),
-            "message": message,
-            "from_client": True,
-        }
-        request = server_pb2.SendMessageRequest(**request)
-        res = self.stubs[self.leader].SendMessage(request)
-        return res.success, res.message
     
     @retry_on_failure()
     def logout(self):
@@ -138,34 +121,6 @@ class Client:
             self.username = None
             return res.success, res.message
         else:
-            return res.success, res.message
-    
-    @retry_on_failure()
-    def read(self, num_messages):
-        '''
-            Reads the last num_messages messages from the user's inbox.
-        '''
-
-        request = {
-            "username": self.username,
-            "num_messages": num_messages,
-            "from_client": True,
-        }
-        request = server_pb2.ReadMessagesRequest(**request)
-        response = self.stubs[self.leader].ReadMessages(request)
-
-        if response.HasField("success"):
-
-            # Format messages for display
-            res = response.success
-            messages = []
-            for message in res.messages:
-                dt = datetime.datetime.fromtimestamp(message.timestamp)
-                readable_time = dt.strftime("%m-%d-%Y, %I:%M %p")
-                messages.append(f"{message.sender} at ({readable_time}): {message.message}")
-            return res.success, messages
-        else:
-            res = response.failure
             return res.success, res.message
         
     @retry_on_failure()
@@ -187,52 +142,6 @@ class Client:
             return res.success, res.message
         else:
             return res.success, res.message
-
-    @retry_on_failure()   
-    def fetch_sent_messages(self):
-        '''
-            Fetches all messages that the current user has sent that have not 
-            yet been read by the recipient.
-        '''
-
-        request = {
-            "username": self.username
-        }
-        request = server_pb2.FetchSentMessagesRequest(**request)
-        response = self.stubs[self.leader].FetchSentMessages(request)
-        
-        if response.HasField("success"):
-            res = response.success
-            sent_messages = defaultdict(list)
-
-            for msg in res.sent_messages:
-                for message in msg.messages:
-                    sent_messages[msg.target_username].append({
-                        "message_id": message.message_id,
-                        "message": message.message,
-                        "timestamp": message.timestamp
-                    })
-            return res.success, sent_messages
-        else:
-            res = response.failure
-            return res.success, res.message
-
-    @retry_on_failure()
-    def delete_message(self, message_id): 
-        '''
-            Deletes the message with the given message_id.
-        '''
-
-        if not self.username:
-            return False, "You are not logged in! Delete message unsuccessful"
-        request = {
-            "sender_username": self.username, 
-            "message_id": message_id,
-            "from_client": True,
-        }
-        request = server_pb2.DeleteMessageRequest(**request)
-        res = self.stubs[self.leader].DeleteMessage(request)
-        return res.success, res.message
 
     def _update_leader(self):
         # Ask servers 0 and 1 who the current leader is
@@ -261,46 +170,185 @@ class Client:
         self.leader = leader
         print(f"Current leader is server {self.leader}")
 
-    @retry_on_failure() 
-    def _register_listening_server(self, port):
+    @retry_on_failure()
+    def create_album(self, album_name):
         '''
-            Registers the client's listener with the server so the server knows
-            where to forward messages that must be delivered immediately to the client.
+            Creates a new album for the current user.
         '''
-
         request = {
             "username": self.username,
-            "host": self.client_host,
-            "port": port,
+            "album_name": album_name,
             "from_client": True,
         }
-        register_listener_request = server_pb2.RegisterClientRequest(**request)
-        res = self.stubs[self.leader].RegisterClient(register_listener_request)
-        print(res)
-        return
+        request = server_pb2.CreateAlbumRequest(**request)
+        res = self.stubs[self.leader].CreateAlbum(request)
+        return res.success, res.message
 
-    
-    def listen_for_messages(self, update_ui_callback):
+    @retry_on_failure()
+    def delete_album(self, album_name):
         '''
-            Create server on the client that listens for messages from the server
-            that must be delivered immediately
+            Deletes an album for the current user.
         '''
+        request = {
+            "username": self.username,
+            "album_name": album_name,
+            "from_client": True,
+        }
+        request = server_pb2.DeleteAlbumRequest(**request)
+        res = self.stubs[self.leader].DeleteAlbum(request)
+        return res.success, res.message
 
-        server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-        client_listener_pb2_grpc.add_Client_ListenerServicer_to_server(
-            Client_Listener(update_ui_callback), 
-            server
-        )
-        address = f"{self.client_host}:{0}"
-        port = server.add_insecure_port(address)
+    @retry_on_failure()
+    def add_album_editor(self, album_name, editor_username):
+        '''
+            Adds an editor to an album.
+        '''
+        request = {
+            "requestor_username": self.username,
+            "editor_username": editor_username,
+            "album_name": album_name,
+            "from_client": True,
+        }
+        request = server_pb2.AddAlbumEditorRequest(**request)
+        res = self.stubs[self.leader].AddAlbumEditor(request)
+        return res.success, res.message
 
-        server.start()
-        print(f"Running server on address {address}")
-        print(f"Bound to port: {port}")
+    @retry_on_failure()
+    def remove_album_editor(self, album_name, editor_username):
+        '''
+            Removes an editor from an album.
+        '''
+        request = {
+            "requestor_username": self.username,
+            "editor_username": editor_username,
+            "album_name": album_name,
+            "from_client": True,
+        }
+        request = server_pb2.RemoveAlbumEditorRequest(**request)
+        res = self.stubs[self.leader].RemoveAlbumEditor(request)
+        return res.success, res.message
 
-        # Register the client's listener with the server
-        self._register_listening_server(port)
+    @retry_on_failure()
+    def upload_image(self, image_path, album_name):
+        '''
+            Uploads an image to an album.
+        '''
+        if not os.path.exists(image_path):
+            return False, "File does not exist."
 
-        server.wait_for_termination()
+        image_name = os.path.basename(image_path)
+        file_type = image_name.split('.')[-1].lower()
+        if file_type not in ['jpg', 'jpeg', 'png']:
+            return False, "Unsupported file type. Supported types are: jpg, jpeg, png"
 
+        def generate_image_chunks():
+            metadata = server_pb2.ImageMetadata(
+                username=self.username,
+                album=album_name,
+                image_name=image_name,
+                size=os.path.getsize(image_path),
+                file_type=file_type
+            )
+            yield server_pb2.ImageChunk(metadata=metadata, from_client=True)
+
+            # Then send image data in chunks
+            with open(image_path, 'rb') as f:
+                while True:
+                    chunk = f.read(1024 * 1024)  # 1MB chunks
+                    if not chunk:
+                        break
+                    yield server_pb2.ImageChunk(image_data=chunk, from_client=True)
+
+        try:
+            res = self.stubs[self.leader].UploadImage(generate_image_chunks())
+            return res.success, res.message
+        except Exception as e:
+            return False, str(e)
+
+    @retry_on_failure()
+    def delete_image(self, album_name, image_name):
+        '''
+            Deletes an image from an album.
+        '''
+        request = {
+            "username": self.username,
+            "album_name": album_name,
+            "image_name": image_name,
+            "from_client": True,
+        }
+        request = server_pb2.DeleteImageRequest(**request)
+        res = self.stubs[self.leader].DeleteImage(request)
+        return res.success, res.message
+
+    @retry_on_failure()
+    def fetch_photos(self, album_name, page=0, page_size=10):
+        '''
+            Fetches photos from an album with pagination.
+        '''
+        request = {
+            "username": self.username,
+            "album_name": album_name,
+            "page": page,
+            "page_size": page_size,
+            "from_client": True,
+        }
+        request = server_pb2.FetchPhotosRequest(**request)
+        response = self.stubs[self.leader].FetchPhotos(request)
         
+        images = []
+        for chunk in response:
+            if chunk.HasField("metadata"):
+                current_image = {
+                    "metadata": {
+                        "username": chunk.metadata.username,
+                        "image_name": chunk.metadata.image_name,
+                        "file_type": chunk.metadata.file_type,
+                        "size": chunk.metadata.size
+                    },
+                    "data": bytearray()
+                }
+                images.append(current_image)
+            else:
+                current_image["data"].extend(chunk.image_data)
+        
+        return True, images
+
+    @retry_on_failure()
+    def fetch_albums(self):
+        '''
+            Fetches all albums for the current user.
+        '''
+        request = {
+            "username": self.username,
+            "from_client": True,
+        }
+        request = server_pb2.FetchUserAlbumsRequest(**request)
+        res = self.stubs[self.leader].FetchUserAlbums(request)
+        return res.success, res.albums
+    
+
+    @retry_on_failure()
+    def get_album_editors(self, album_name):
+        """Get the list of editors for an album."""
+        try:
+            # Create the request with all required fields
+            request = server_pb2.FetchAlbumEditorsRequest(
+                username=self.username,
+                album_name=album_name
+            )
+
+            # Make the RPC call
+            response = self.stubs[self.leader].FetchAlbumEditors(request)
+
+            # Check if the response was successful
+            if response.success:
+                return response.editors
+            else:
+                print(f"Error getting album editors on server side: {response.message}")
+                return []
+
+        except Exception as e:
+            print(f"Error getting album editors: {e}")
+            return []
+        
+ 

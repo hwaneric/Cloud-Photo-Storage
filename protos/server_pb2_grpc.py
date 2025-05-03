@@ -99,6 +99,51 @@ class ServerStub(object):
                 request_serializer=server__pb2.StatusRequest.SerializeToString,
                 response_deserializer=server__pb2.StatusResponse.FromString,
                 _registered_method=True)
+        self.UploadImage = channel.stream_unary(
+                '/server.Server/UploadImage',
+                request_serializer=server__pb2.ImageChunk.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.CreateAlbum = channel.unary_unary(
+                '/server.Server/CreateAlbum',
+                request_serializer=server__pb2.CreateAlbumRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.AddAlbumEditor = channel.unary_unary(
+                '/server.Server/AddAlbumEditor',
+                request_serializer=server__pb2.AddAlbumEditorRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.RemoveAlbumEditor = channel.unary_unary(
+                '/server.Server/RemoveAlbumEditor',
+                request_serializer=server__pb2.RemoveAlbumEditorRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.DeleteAlbum = channel.unary_unary(
+                '/server.Server/DeleteAlbum',
+                request_serializer=server__pb2.DeleteAlbumRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.DeleteImage = channel.unary_unary(
+                '/server.Server/DeleteImage',
+                request_serializer=server__pb2.DeleteImageRequest.SerializeToString,
+                response_deserializer=server__pb2.StandardServerResponse.FromString,
+                _registered_method=True)
+        self.FetchPhotos = channel.unary_stream(
+                '/server.Server/FetchPhotos',
+                request_serializer=server__pb2.FetchPhotosRequest.SerializeToString,
+                response_deserializer=server__pb2.ImageChunk.FromString,
+                _registered_method=True)
+        self.FetchUserAlbums = channel.unary_unary(
+                '/server.Server/FetchUserAlbums',
+                request_serializer=server__pb2.FetchUserAlbumsRequest.SerializeToString,
+                response_deserializer=server__pb2.FetchUserAlbumsResponse.FromString,
+                _registered_method=True)
+        self.FetchAlbumEditors = channel.unary_unary(
+                '/server.Server/FetchAlbumEditors',
+                request_serializer=server__pb2.FetchAlbumEditorsRequest.SerializeToString,
+                response_deserializer=server__pb2.FetchAlbumEditorsResponse.FromString,
+                _registered_method=True)
 
 
 class ServerServicer(object):
@@ -182,6 +227,60 @@ class ServerServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def UploadImage(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CreateAlbum(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AddAlbumEditor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RemoveAlbumEditor(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteAlbum(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DeleteImage(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FetchPhotos(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FetchUserAlbums(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def FetchAlbumEditors(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_ServerServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -249,6 +348,51 @@ def add_ServerServicer_to_server(servicer, server):
                     servicer.ConfirmServerDeath,
                     request_deserializer=server__pb2.StatusRequest.FromString,
                     response_serializer=server__pb2.StatusResponse.SerializeToString,
+            ),
+            'UploadImage': grpc.stream_unary_rpc_method_handler(
+                    servicer.UploadImage,
+                    request_deserializer=server__pb2.ImageChunk.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'CreateAlbum': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateAlbum,
+                    request_deserializer=server__pb2.CreateAlbumRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'AddAlbumEditor': grpc.unary_unary_rpc_method_handler(
+                    servicer.AddAlbumEditor,
+                    request_deserializer=server__pb2.AddAlbumEditorRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'RemoveAlbumEditor': grpc.unary_unary_rpc_method_handler(
+                    servicer.RemoveAlbumEditor,
+                    request_deserializer=server__pb2.RemoveAlbumEditorRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'DeleteAlbum': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteAlbum,
+                    request_deserializer=server__pb2.DeleteAlbumRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'DeleteImage': grpc.unary_unary_rpc_method_handler(
+                    servicer.DeleteImage,
+                    request_deserializer=server__pb2.DeleteImageRequest.FromString,
+                    response_serializer=server__pb2.StandardServerResponse.SerializeToString,
+            ),
+            'FetchPhotos': grpc.unary_stream_rpc_method_handler(
+                    servicer.FetchPhotos,
+                    request_deserializer=server__pb2.FetchPhotosRequest.FromString,
+                    response_serializer=server__pb2.ImageChunk.SerializeToString,
+            ),
+            'FetchUserAlbums': grpc.unary_unary_rpc_method_handler(
+                    servicer.FetchUserAlbums,
+                    request_deserializer=server__pb2.FetchUserAlbumsRequest.FromString,
+                    response_serializer=server__pb2.FetchUserAlbumsResponse.SerializeToString,
+            ),
+            'FetchAlbumEditors': grpc.unary_unary_rpc_method_handler(
+                    servicer.FetchAlbumEditors,
+                    request_deserializer=server__pb2.FetchAlbumEditorsRequest.FromString,
+                    response_serializer=server__pb2.FetchAlbumEditorsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -602,6 +746,249 @@ class Server(object):
             '/server.Server/ConfirmServerDeath',
             server__pb2.StatusRequest.SerializeToString,
             server__pb2.StatusResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UploadImage(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            '/server.Server/UploadImage',
+            server__pb2.ImageChunk.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreateAlbum(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/CreateAlbum',
+            server__pb2.CreateAlbumRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AddAlbumEditor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/AddAlbumEditor',
+            server__pb2.AddAlbumEditorRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RemoveAlbumEditor(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/RemoveAlbumEditor',
+            server__pb2.RemoveAlbumEditorRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteAlbum(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/DeleteAlbum',
+            server__pb2.DeleteAlbumRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DeleteImage(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/DeleteImage',
+            server__pb2.DeleteImageRequest.SerializeToString,
+            server__pb2.StandardServerResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FetchPhotos(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/server.Server/FetchPhotos',
+            server__pb2.FetchPhotosRequest.SerializeToString,
+            server__pb2.ImageChunk.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FetchUserAlbums(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/FetchUserAlbums',
+            server__pb2.FetchUserAlbumsRequest.SerializeToString,
+            server__pb2.FetchUserAlbumsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def FetchAlbumEditors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/server.Server/FetchAlbumEditors',
+            server__pb2.FetchAlbumEditorsRequest.SerializeToString,
+            server__pb2.FetchAlbumEditorsResponse.FromString,
             options,
             channel_credentials,
             insecure,
