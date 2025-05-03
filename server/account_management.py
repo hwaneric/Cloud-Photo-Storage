@@ -380,6 +380,8 @@ def delete_album(username, album_name, db_path):
     if album_metadata["creator"] != username:
         return {"success": False, "message": "You do not have permission to delete this album."}
 
+    album_editors = album_metadata.get("editors", [])
+
     # Delete the album directory with robust error handling
     try:
         shutil.rmtree(album_dir, onerror=on_rm_error)
@@ -388,7 +390,8 @@ def delete_album(username, album_name, db_path):
 
     # Update user profile to remove the deleted album
     existing_users = load_user_data(db_path)
-    existing_users[username]["albums"].remove(album_name)
+    for username in album_editors:
+        existing_users[username]["albums"].remove(album_name)
     save_user_data(existing_users, db_path)
 
     return {"success": True, "message": "Album deleted successfully."}
