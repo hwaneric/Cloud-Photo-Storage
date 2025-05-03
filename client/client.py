@@ -339,7 +339,6 @@ class Client:
 
             # Make the RPC call
             response = self.stubs[self.leader].FetchAlbumEditors(request)
-            print("here is response", response)
 
             # Check if the response was successful
             if response.success:
@@ -349,7 +348,6 @@ class Client:
                 return []
 
         except Exception as e:
-            raise(e)
             print(f"Error getting album editors: {e}")
             return []
         
