@@ -7,12 +7,7 @@ service Server {
     rpc Login(UserAuthRequest) returns (UserLoginResponse);
     rpc Logout(UserLogoutRequest) returns (StandardServerResponse);
     rpc ListUsernames(ListUsernamesRequest) returns (ListUsernamesResponse);
-    // rpc SendMessage(SendMessageRequest) returns (StandardServerResponse);
-    // rpc RegisterClient(RegisterClientRequest) returns (StandardServerResponse);
-    // rpc ReadMessages(ReadMessagesRequest) returns (ReadMessageResponse);
     rpc DeleteAccount(DeleteAccountRequest) returns (StandardServerResponse);
-    // rpc DeleteMessage(DeleteMessageRequest) returns (StandardServerResponse);
-    // rpc FetchSentMessages(FetchSentMessagesRequest) returns (FetchSentMessagesResponse);
     rpc Heartbeat(stream HeartbeatRequest) returns (HeartbeatResponse);
     rpc CurrentLeader(CurrentLeaderRequest) returns (CurrentLeaderResponse);
     rpc ConfirmServerDeath(StatusRequest) returns (StatusResponse);

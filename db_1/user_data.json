@@ -1,1 +1,1 @@
-{"s": {"username": "s", "password": "$2b$12$7hc1Hhr6PIFblCadmQqmKuNc5DopY9JKHsD4FFB4adAp1aowHXzd.", "online": false, "albums": [], "host": "", "port": ""}, "eric": {"username": "eric", "password": "$2b$12$1dqg.8N5XlkK4nKHy30bgO6XiFTztf30yd5vIem93PvHSPRIN4tc.", "online": false, "albums": ["test"], "host": "", "port": ""}}
+{"eric": {"username": "eric", "password": "$2b$12$o9GwSpZOVx/5DtdFfxc4oeFZ3pkoQ0Ui68.GRxz58JzpKLCDJwgFu", "online": false, "albums": ["test"], "host": "", "port": ""}}

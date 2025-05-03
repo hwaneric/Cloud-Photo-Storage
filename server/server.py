@@ -321,47 +321,6 @@ class Server(server_pb2_grpc.ServerServicer):
         
         return server_response
     
-    # def RegisterClient(self, request, context):
-    #     '''
-    #         Registers a client stub to the server for sending messages to the client
-    #     '''
-    #     username = request.username
-    #     host = request.host
-    #     port = request.port
-    #     from_client = request.from_client
-
-    #     # If non-leader server receives request from a client, reject
-    #     if from_client and not self.is_leader:
-    #         print(f"Server {self.id} is not the leader. Rejecting request.")
-    #         server_response = server_pb2.StandardServerResponse(
-    #             success=False, 
-    #             message="You made a request to a non-leader server. Please try again later."
-    #         )
-    #         return server_response
-
-    #     channel = grpc.insecure_channel(f"{host}:{port}")
-    #     stub = client_listener_pb2_grpc.Client_ListenerStub(channel)
-    #     print(f"Received register client request from {username}")
-
-    #     self.stub_map[username] = stub
-
-    #     if self.is_leader:
-    #         # Notify other servers of new client
-    #         for stub in self.server_stubs.values():
-    #             request = server_pb2.RegisterClientRequest(
-    #                 username=username, 
-    #                 host=host, 
-    #                 port=port,
-    #                 from_client=False
-    #             )
-    #             temp_res = stub.RegisterClient(request)
-    #             if not temp_res.success:
-    #                 print(f"Failed to notify server {stub} of new client registration {username}")
-    #                 print(temp_res.message)
-    #                 raise Exception(f"Failed to notify server {stub} of new client registration {username}")
-                
-    #     return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
-
     def DeleteAccount(self, request, context):
         username = request.username
         from_client = request.from_client
