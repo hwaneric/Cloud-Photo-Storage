@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import patch, MagicMock, ANY
+from unittest.mock import patch, MagicMock, ANY, mock_open
 import time
 import sys
 import os
@@ -115,52 +115,6 @@ def test_list_failure():
             assert client.username == "testuser"
             mock_list.assert_called_once_with(server_pb2.ListUsernamesRequest(username_pattern="?"))
 
-def test_message_success():
-    with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
-        client.username = "testuser"
-        client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-
-        with patch.object(client.stub, 'SendMessage', return_value=server_pb2.StandardServerResponse(success=True, message="Message sent successfully.")) as mock_message:
-            success, message = client.message("targetuser", "Hello")
-
-            assert success == True
-            assert message == "Message sent successfully."
-            assert client.username == "testuser"
-
-            actual_call_args = mock_message.call_args[0][0]
-
-            assert actual_call_args.sender_username == "testuser"
-            assert actual_call_args.target_username == "targetuser"
-            assert actual_call_args.message == "Hello"
-            current_time = int(time.time())
-            assert current_time - actual_call_args.timestamp <= 5
-
-def test_message_failure():
-    with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
-        client.username = "testuser"
-        client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-
-        with patch.object(client.stub, 'SendMessage', return_value=server_pb2.StandardServerResponse(success=False, message="Target user does not exist.")) as mock_message:
-            success, message = client.message("nonexistentuser", "Hello")
-
-            assert success == False
-            assert message == "Target user does not exist."
-            assert client.username == "testuser"
-
-            actual_call_args = mock_message.call_args[0][0]
-
-            assert actual_call_args.sender_username == "testuser"
-            assert actual_call_args.target_username == "nonexistentuser"
-            assert actual_call_args.message == "Hello"
-            current_time = int(time.time())
-            assert current_time - actual_call_args.timestamp <= 5
-
 def test_logout_success():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345, "127.0.0.1")
@@ -192,52 +146,6 @@ def test_logout_failure():
             assert message == "Logout failed."
             assert client.username == "testuser"
             mock_logout.assert_called_once_with(server_pb2.UserLogoutRequest(username="testuser", from_client=True))
-
-def test_read_success():
-    with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
-        client.username = "testuser"
-        client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-
-        response = server_pb2.ReadMessageResponse()
-        response.success.success = True
-        response.success.message = "Messages found."
-        message = response.success.messages.add()
-        message.sender = "user1"
-        message.timestamp = 1617184800
-        message.message = "Hello!"
-        
-        with patch.object(client.stub, 'ReadMessages') as mock_read_messages:
-            mock_read_messages.return_value = response
-            
-            success, messages = client.read(1)
-            
-            assert success == True
-            assert messages == ["user1 at (03-31-2021, 06:00 AM): Hello!"]
-            mock_read_messages.assert_called_once_with(server_pb2.ReadMessagesRequest(username="testuser", num_messages=1, from_client=True))
-
-def test_read_failure():
-    with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
-        client.username = "testuser"
-        client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-        
-        response = server_pb2.ReadMessageResponse()
-        response.failure.success = False
-        response.failure.message = "No messages found."
-        
-        with patch.object(client.stub, 'ReadMessages') as mock_read_messages:
-            mock_read_messages.return_value = response
-            
-            success, message = client.read(1)
-            
-            assert success == False
-            assert message == "No messages found."
-            mock_read_messages.assert_called_once_with(server_pb2.ReadMessagesRequest(username="testuser", num_messages=1, from_client=True))
 
 def test_delete_account_success():
     with patch.object(Client, '_update_leader', return_value=None):
@@ -275,85 +183,97 @@ def test_delete_account_failure():
             assert client.username == "testuser"
             mock_delete_account.assert_called_once_with(server_pb2.DeleteAccountRequest(username="testuser", from_client=True))
 
-def test_fetch_sent_messages_success():
+def test_upload_image_success():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345, "127.0.0.1")
         client.username = "testuser"
         client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-        
-        response = server_pb2.FetchSentMessagesResponse()
-        response.success.success = True
-        response.success.message = "Sent messages fetched successfully."
-        sent_message_1 = server_pb2.SentMessages(target_username="user1")
-        sent_message_1.messages.add(sender="testuser", timestamp=1617184800, message="Message 1")
-        sent_message_2 = server_pb2.SentMessages(target_username="user2")
-        sent_message_2.messages.add(sender="testuser", timestamp=1617184801, message="Message 2")
-        response.success.sent_messages.extend([sent_message_1, sent_message_2])
-        
-        with patch.object(client.stub, 'FetchSentMessages') as mock_fetch_sent_messages:
-            mock_fetch_sent_messages.return_value = response
-            
-            success, sent_messages = client.fetch_sent_messages()
-            
-            assert success == True
-            expected_messages = {
-                "user1": [{"message": "Message 1", "message_id": '', "timestamp": 1617184800}],
-                "user2": [{"message": "Message 2", "message_id": '', "timestamp": 1617184801}]
-            }
-            assert sent_messages == expected_messages
-            mock_fetch_sent_messages.assert_called_once_with(server_pb2.FetchSentMessagesRequest(username="testuser"))
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        with patch("os.path.exists", return_value=True), \
+             patch("os.path.getsize", return_value=123), \
+             patch("builtins.open", mock_open(read_data=b"data")), \
+             patch.object(client.stub, 'UploadImage') as mock_upload:
+            mock_upload.return_value = server_pb2.StandardServerResponse(success=True, message="Image uploaded successfully.")
+            success, message = client.upload_image("/tmp/test.jpg", "album1")
+            assert success is True
+            assert message == "Image uploaded successfully."
 
-def test_fetch_sent_messages_failure():
+def test_upload_image_unsupported_filetype():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345, "127.0.0.1")
         client.username = "testuser"
         client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        with patch("os.path.exists", return_value=True), \
+             patch("os.path.getsize", return_value=123), \
+             patch("builtins.open", mock_open(read_data=b"data")):
+            success, message = client.upload_image("/tmp/test.txt", "album1")
+            assert success is None or success is False
+            assert "Unsupported file type" in str(message)
 
-        response = server_pb2.FetchSentMessagesResponse()
-        response.failure.success = False
-        response.failure.message = "No sent messages found."
-
-        with patch.object(client.stub, 'FetchSentMessages') as mock_fetch_sent_messages:
-            mock_fetch_sent_messages.return_value = response
-            success, message = client.fetch_sent_messages()
-            assert success == False
-            assert message == "No sent messages found."
-            mock_fetch_sent_messages.assert_called_once_with(server_pb2.FetchSentMessagesRequest(username="testuser"))
-
-def test_delete_message_success():
+def test_upload_image_failure():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345, "127.0.0.1")
         client.username = "testuser"
         client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-        
-        with patch.object(client.stub, 'DeleteMessage') as mock_delete_message:
-            mock_delete_message.return_value = server_pb2.StandardServerResponse(success=True, message="Message deleted successfully.")
-            
-            success, message = client.delete_message("1")
-            
-            assert success == True
-            assert message == "Message deleted successfully."
-            mock_delete_message.assert_called_once_with(server_pb2.DeleteMessageRequest(sender_username="testuser", message_id="1", from_client=True))
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        with patch("os.path.exists", return_value=True), \
+             patch("os.path.getsize", return_value=123), \
+             patch("builtins.open", mock_open(read_data=b"data")), \
+             patch.object(client.stub, 'UploadImage') as mock_upload:
+            mock_upload.return_value = server_pb2.StandardServerResponse(success=False, message="Album does not exist")
+            success, message = client.upload_image("/tmp/test.jpg", "album1")
+            assert not success
+            assert "Album does not exist" in message
 
-def test_delete_message_failure():
+def test_fetch_photos_success():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345, "127.0.0.1")
         client.username = "testuser"
         client.stub = MagicMock()
-        client.leader = 0  # Mock the leader attribute
-        client.stubs = {0: client.stub}  # Mock the stubs attribute
-        
-        with patch.object(client.stub, 'DeleteMessage') as mock_delete_message:
-            mock_delete_message.return_value = server_pb2.StandardServerResponse(success=False, message="Delete message failed.")
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        # Simulate a stream of two images
+        chunk1 = server_pb2.ImageChunk()
+        chunk1.metadata.username = "testuser"
+        chunk1.metadata.album = "album1"
+        chunk1.metadata.image_name = "img1.jpg"
+        chunk1.metadata.size = 123
+        chunk1.metadata.file_type = "jpg"
+        chunk2 = server_pb2.ImageChunk()
+        chunk2.image_data = b"data"
+        with patch.object(client.stub, 'FetchPhotos', return_value=iter([chunk1, chunk2])) as mock_fetch:
+            success, images = client.fetch_photos("album1", 0, 10)
+            assert success is True
+            assert len(images) == 1
+            assert images[0]["metadata"]["image_name"] == "img1.jpg"
+            assert isinstance(images[0]["data"], bytearray)
 
-            success, message = client.delete_message("1")
+def test_delete_image_success():
+    with patch.object(Client, '_update_leader', return_value=None):
+        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client.username = "testuser"
+        client.stub = MagicMock()
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        with patch.object(client.stub, 'DeleteImage') as mock_delete:
+            mock_delete.return_value = server_pb2.StandardServerResponse(success=True, message="Image deleted successfully.")
+            success, message = client.delete_image("album1", "img1.jpg")
+            assert success is True
+            assert message == "Image deleted successfully."
 
-            assert success == False
-            assert message == "Delete message failed."
-            mock_delete_message.assert_called_once_with(server_pb2.DeleteMessageRequest(sender_username="testuser", message_id="1", from_client=True))
+def test_delete_image_failure():
+    with patch.object(Client, '_update_leader', return_value=None):
+        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client.username = "testuser"
+        client.stub = MagicMock()
+        client.leader = 0
+        client.stubs = {0: client.stub}
+        with patch.object(client.stub, 'DeleteImage') as mock_delete:
+            mock_delete.return_value = server_pb2.StandardServerResponse(success=False, message="Image does not exist.")
+            success, message = client.delete_image("album1", "img1.jpg")
+            assert not success
+            assert message == "Image does not exist."

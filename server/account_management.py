@@ -5,6 +5,7 @@ import time
 import uuid
 import bcrypt
 import shutil
+import stat
 
 USER_DATA_FILE = "user_data.json"
 
@@ -48,18 +49,14 @@ def create_account(username, password, db_path):
     existing_users[username] = {
         "username": username, 
         "password": hashed_password.decode('utf-8'), 
-        "online": True, 
+        "online": True,
+        "albums": []  # Initialize empty albums list for new user
     }
 
     save_user_data(existing_users, db_path)
-
-    # db_pathname = get_db_pathname()
-    user_file_path = os.path.join(db_path, "unread_messages", f"{username}.json")
-    with open(user_file_path, 'w') as user_file:
-        json.dump([], user_file)
     return {
-        "success": True, "message": 
-        "Account created successfully.",
+        "success": True, 
+        "message": "Account created successfully."
     }
 
 def login(username, password, db_path):
@@ -68,31 +65,21 @@ def login(username, password, db_path):
     if is_online:
         return {
             "success": False, 
-            "message": "User is already logged in.",
+            "message": "User is already logged in."
         }
     if username_exists(username, db_path):
         user = existing_users[username]
         if bcrypt.checkpw(password.encode('utf-8'), user["password"].encode('utf-8')):
             user["online"] = True
             save_user_data(existing_users, db_path)
-
-            # Get number of unread messages
-            unread_messages_path = os.path.join(db_path, "unread_messages", f"{username}.json")
-            unread_message_count = 0
-            if os.path.exists(unread_messages_path):
-                with open(unread_messages_path, "r") as f:
-                    unread_messages = json.load(f)
-                    unread_message_count = len(unread_messages)
-            
             return {
                 "success": True, 
-                "message": "Login successful.",
-                "unread_message_count": unread_message_count
+                "message": "Login successful."
             }
       
     return {
         "success": False, 
-        "message": "Incorrect username or password. Please try again.",
+        "message": "Incorrect username or password. Please try again."
     }
 
 def logout(username, db_path):
@@ -129,101 +116,6 @@ def list_accounts(username_pattern, db_path):
             "message": "Invalid regex pattern.",
         }
 
-def send_offline_message(target_username, sender_username, message, timestamp, db_path, message_id=None):
-    '''
-        Sends an offline message to the target user. Returns a response to be 
-        sent back to the client and the message ID.
-    '''
-
-    # Generate a unique message ID
-    if not message_id:
-        message_id = str(uuid.uuid4())
-
-    # Find path to target user's unread messages
-    target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
-
-    if not os.path.exists(target_db_pathname) or not username_exists(target_username, db_path):
-        res = {
-            "success": False,
-            "message": "Target user does not exist.",
-        }
-        return res, -1
-
-    new_message = {"message_id": message_id, "message": message, "sender": sender_username, "timestamp": timestamp}
-    with open(target_db_pathname, "r") as f:
-        unread_messages = json.load(f)
-    
-    # Find the position to insert the new message to maintain sorted time order
-    insert_position = len(unread_messages)
-    for i in range(len(unread_messages) - 1, -1, -1):
-        if unread_messages[i]["timestamp"] <= timestamp:
-            insert_position = i + 1
-            break
-
-    # Insert the new message at the correct position
-    unread_messages.insert(insert_position, new_message)
-    with open(target_db_pathname, "w") as f:
-        json.dump(unread_messages, f)
-
-    # Save the sent message to the sender's sent messages
-    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{sender_username}.json")
-    if not os.path.exists(sent_db_pathname):
-        sent_messages = {}
-    else:
-        with open(sent_db_pathname, "r") as f:
-            sent_messages = json.load(f)
-    
-    if target_username not in sent_messages:
-        sent_messages[target_username] = []
-    
-    sent_messages[target_username].append(new_message)
-    with open(sent_db_pathname, "w") as f:
-        json.dump(sent_messages, f)
-
-    res = {
-        "success": True, 
-        "message": "Message sent successfully.",
-    }
-    return res, message_id
-
-def read_messages(username, num_messages, db_path):
-    # db_pathname = get_db_pathname()
-
-    # Find path to target user's unread messages
-    target_db_pathname = os.path.join(db_path, "unread_messages", f"{username}.json")
-    if not os.path.exists(target_db_pathname):
-        return {
-            "success": False, 
-            "message": "Target user does not exist.",
-        }
-
-    with open(target_db_pathname, "r") as f:
-        unread_messages = json.load(f)
-
-    msg_to_read = unread_messages[:num_messages]
-    
-    with open(target_db_pathname, "w") as f:
-        json.dump(unread_messages[num_messages:], f)
-
-    for message in msg_to_read: 
-        sender_username = message["sender"]
-        message_id = message["message_id"]
-        sent_db_pathname = os.path.join(db_path, "sent_messages", f"{sender_username}.json")
-        if os.path.exists(sent_db_pathname):
-            with open(sent_db_pathname, "r") as f:
-                sent_messages = json.load(f)
-            for recipient, messages in sent_messages.items():
-                sent_messages[recipient] = [msg for msg in messages if msg["message_id"] != message_id]
-            with open(sent_db_pathname, "w") as f:
-                json.dump(sent_messages, f)
-                
-    return_data = {
-        "success": True,
-        "message": "Messages read successfully.",
-        "messages": unread_messages[:num_messages],
-    }
-    return return_data
-
 def check_if_online(username, db_path):
     existing_users = load_user_data(db_path)
     if username in existing_users:
@@ -247,85 +139,57 @@ def delete_account(username, db_path):
     if username not in existing_users:
         return {
             "success": False, 
-            "message": "Username does not exist.",
+            "message": "Username does not exist."
         }
     
-    if existing_users[username]["online"]:
-        del existing_users[username]
-        save_user_data(existing_users, db_path)
-
-        # db_pathname = get_db_pathname()
-        unread_messages_path = os.path.join(db_path, "unread_messages", f"{username}.json")
-        if os.path.exists(unread_messages_path):
-            os.remove(unread_messages_path)
-
-        sent_messages_path = os.path.join(db_path, "sent_messages", f"{username}.json")
-        if os.path.exists(sent_messages_path):
-            os.remove(sent_messages_path)
-
+    if not existing_users[username].get("online", False):
         return {
-            "success": True, 
-            "message": "Account deleted successfully.",
+            "success": False,
+            "message": "Attempting to delete offline account.",
         }
     
-    return {
-        "success": False, 
-        "message": "Attempting to delete offline account.",
-    }
-    
-def delete_message(username, message_id, db_path):
-    # db_pathname = get_db_pathname()
-
-    # Load the user's sent messages
-    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{username}.json")
-    if not os.path.exists(sent_db_pathname):
-        return {"success": False, "message": "No sent messages found."}
-    
-    with open(sent_db_pathname, "r") as f:
-        sent_messages = json.load(f)
-    
-    # Find and delete the message with the given message_id
-    target_username = None
-    for recipient, messages in sent_messages.items():
-        for message in messages: 
-            if message["message_id"] == message_id:
-                target_username = recipient
-                break
-        if target_username:
-            break
-
-    if not target_username: 
-        return {"success": False, "message": "Message ID not found."}
-    
-    # Remove message from sent_messages
-    sent_messages[target_username] = [msg for msg in sent_messages[target_username] if msg["message_id"] != message_id]
-    with open(sent_db_pathname, "w") as f:
-        json.dump(sent_messages, f)
-
-    # Load the target user's unread messages
-    target_db_pathname = os.path.join(db_path, "unread_messages", f"{target_username}.json")
-    if not os.path.exists(target_db_pathname):
-        return {"success": False, "message": "Target user does not exist."}
-    with open(target_db_pathname, "r") as f:
-        unread_messages = json.load(f)
-
-    # Remove message from target user's unread_messages
-    unread_messages = [msg for msg in unread_messages if msg["message_id"] != message_id]
-    with open(target_db_pathname, "w") as f:
-        json.dump(unread_messages, f)
-
-    return {"success": True, "message": "Message deleted successfully."}
-
-
-def fetch_sent_messages(username, db_path):
-    # db_pathname = get_db_pathname()
-    sent_db_pathname = os.path.join(db_path, "sent_messages", f"{username}.json")
-    if not os.path.exists(sent_db_pathname):
-        return {"success": False, "message": "No sent messages found."}
-
-    with open(sent_db_pathname, "r") as f:
-        sent_messages = json.load(f)
-    return {"success": True, "message": "Sent messages fetched successfully.", "sent_messages": sent_messages}
+    user_albums = existing_users[username].get("albums", [])
+    for album_name in user_albums:
+        album_dir = os.path.join(db_path, "albums", album_name)
+        metadata_path = os.path.join(album_dir, "metadata.json")
+        if not os.path.exists(metadata_path):
+            continue
+        with open(metadata_path, "r") as f:
+            album_metadata = json.load(f)
+        if album_metadata["creator"] == username:
+            # User is creator: delete the whole album
+            try:
+                shutil.rmtree(album_dir, onerror=on_rm_error)
+            except Exception:
+                pass
+            # Remove this album from all users' album lists
+            for other_user in existing_users:
+                if album_name in existing_users[other_user].get("albums", []):
+                    existing_users[other_user]["albums"].remove(album_name)
+        else:
+            # User is just an editor: remove their images and remove from editors list
+            # Remove user's images
+            for image_folder in os.listdir(album_dir):
+                image_dir = os.path.join(album_dir, image_folder)
+                if os.path.isdir(image_dir):
+                    image_metadata_path = os.path.join(image_dir, "metadata.json")
+                    if os.path.exists(image_metadata_path):
+                        with open(image_metadata_path, "r") as f:
+                            image_metadata = json.load(f)
+                        if image_metadata.get("username") == username:
+                            try:
+                                shutil.rmtree(image_dir, onerror=on_rm_error)
+                            except Exception:
+                                pass
+            # Remove user from editors list
+            if username in album_metadata["editors"]:
+                album_metadata["editors"].remove(username)
+                with open(metadata_path, "w") as f:
+                    json.dump(album_metadata, f)
+    # Remove user from user_data
+    del existing_users[username]
+    save_user_data(existing_users, db_path)
+    return {"success": True, "message": "Account deleted successfully."}
 
 def upload_image(username, image_name, file_type, album_name, db_path, image_data):
     """
@@ -484,6 +348,11 @@ def remove_album_editor(requestor_username, editor_username, album_name, db_path
 
     return {"success": True, "message": f"{editor_username} removed as editor from {album_name}."}
 
+def on_rm_error(func, path, exc_info):
+    # Remove read-only attribute and retry
+    os.chmod(path, stat.S_IWRITE)
+    func(path)
+
 def delete_album(username, album_name, db_path):
     """
     Deletes an album for the user. The album is deleted from the directory structure based on the username.
@@ -507,8 +376,11 @@ def delete_album(username, album_name, db_path):
     if album_metadata["creator"] != username:
         return {"success": False, "message": "You do not have permission to delete this album."}
 
-    # Delete the album directory
-    shutil.rmtree(album_dir)
+    # Delete the album directory with robust error handling
+    try:
+        shutil.rmtree(album_dir, onerror=on_rm_error)
+    except Exception as e:
+        return {"success": False, "message": f"Failed to delete album directory: {e}"}
 
     # Update user profile to remove the deleted album
     existing_users = load_user_data(db_path)
@@ -540,16 +412,26 @@ def delete_image(username, image_name, album_name, db_path):
     
     image_dir = os.path.join(album_dir, image_name)
     if not os.path.exists(image_dir):
-        return {"success": False, "message": "Image does not exist."}
+        return {"success": True, "message": "Image already deleted."}
     image_metadata_path = os.path.join(image_dir, "metadata.json")
+    if not os.path.exists(image_metadata_path):
+        # If the metadata is missing, treat as already deleted
+        try:
+            shutil.rmtree(image_dir, onerror=on_rm_error)
+        except Exception:
+            pass
+        return {"success": True, "message": "Image already deleted or metadata missing."}
     with open(image_metadata_path, "r") as f:
         image_metadata = json.load(f)
 
     if image_metadata["username"] != username:
         return {"success": False, "message": "You do not have permission to delete this image because you are not the initial image creator."}
     
-    # Delete the image directory
-    shutil.rmtree(image_dir)
+    # Delete the image directory with robust error handling
+    try:
+        shutil.rmtree(image_dir, onerror=on_rm_error)
+    except Exception as e:
+        return {"success": False, "message": f"Failed to delete image directory: {e}"}
     return {"success": True, "message": "Image deleted successfully."}
 
 def fetch_photos(username, album_name, page, page_size, db_path):
@@ -621,8 +503,6 @@ def fetch_albums(username, db_path):
         "message": "Albums fetched successfully.", 
         "albums": user_albums,
     }
-
-
 
 def get_db_pathname():
     current_dir = os.path.dirname(__file__)

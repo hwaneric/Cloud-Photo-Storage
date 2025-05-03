@@ -8,7 +8,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_albums, fetch_photos, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, remove_album_editor, send_offline_message, delete_account, delete_message, upload_image
+from account_management import add_album_editor, check_if_online, create_account, create_album, delete_album, delete_image, fetch_albums, fetch_photos, list_accounts, login, logout, logout_all_users, remove_album_editor, delete_account, upload_image
 import threading
 import os
 
@@ -215,7 +215,6 @@ class Server(server_pb2_grpc.ServerServicer):
                     print(f"Failed to notify server {stub} of new user {username}")
                     print(res.message)
                     raise Exception(f"Failed to notify server {stub} of new user {username}")
-        
 
         return server_pb2.StandardServerResponse(**res)
     
@@ -322,61 +321,6 @@ class Server(server_pb2_grpc.ServerServicer):
         
         return server_response
     
-    def SendMessage(self, request, context):
-        sender = request.sender_username
-        target = request.target_username
-        message = request.message
-        timestamp = request.timestamp
-        message_id = None
-        from_client = request.from_client
-
-        # If non-leader server receives request from a client, reject
-        if from_client and not self.is_leader:
-            print(f"Server {self.id} is not the leader. Rejecting request.")
-            server_response = server_pb2.StandardServerResponse(
-                success=False, 
-                message="You made a request to a non-leader server. Please try again later."
-            )
-            return server_response
-
-        if request.HasField("message_id"):
-            message_id = request.message_id
-
-        print(f"Received message from {sender} to {target}")
-
-        target_logged_in = check_if_online(target, self.db_path)
-        if target_logged_in and target in self.stub_map:
-            print("Target is online, sending online message")
-
-            res = {"success": True, "message": message, "sender": sender}
-            online_message = client_listener_pb2.OnlineMessage(**res)
-
-            stub = self.stub_map[target]
-            stub.SendOnlineMessage(online_message)
-
-            return server_pb2.StandardServerResponse(success=True, message="Message sent successfully")
-
-        else:
-            res, message_id = send_offline_message(target, sender, message, timestamp, self.db_path, message_id=message_id)
-            if res["success"] and self.is_leader:
-                # Notify other servers of logout
-                for stub in self.server_stubs.values():
-                    request = server_pb2.SendMessageRequest(
-                        sender_username=sender,
-                        target_username=target,
-                        message=message,
-                        timestamp=timestamp,
-                        message_id=message_id,
-                        from_client=False
-                    )
-                    temp_res = stub.SendMessage(request)
-                    if not temp_res.success:
-                        print(f"Failed to notify server {stub} of new message from {sender} to {target}")
-                        print(res.message)
-                        raise Exception(f"Failed to notify server {stub} of new message from {sender} to {target}")
-                
-            return server_pb2.StandardServerResponse(**res)
-    
     def RegisterClient(self, request, context):
         '''
             Registers a client stub to the server for sending messages to the client
@@ -418,56 +362,6 @@ class Server(server_pb2_grpc.ServerServicer):
                 
         return server_pb2.StandardServerResponse(success=True, message= "Registered successfully")
 
-    def ReadMessages(self, request, context):
-        username = request.username
-        num_messages = request.num_messages
-        from_client = request.from_client
-        print(f"Received read messages request from {username}")
-
-        # If non-leader server receives request from a client, reject
-        if from_client and not self.is_leader:
-            print(f"Server {self.id} is not the leader. Rejecting request.")
-            standard_server_response = server_pb2.StandardServerResponse(
-                success=False, 
-                message="You made a request to a non-leader server. Please try again later."
-            )
-            server_response.failure.CopyFrom(standard_server_response)
-
-            return server_response
-        
-        res = read_messages(username, num_messages, self.db_path)
-
-        server_response = server_pb2.ReadMessageResponse()
-        if res["success"]:
-            read_message = server_pb2.ReadMessage(
-                success=res["success"],
-                message=res["message"],
-                messages=res["messages"]
-            )
-            server_response.success.CopyFrom(read_message)
-
-            if self.is_leader:
-                # Notify other servers of read messages
-                for stub in self.server_stubs.values():
-                    request = server_pb2.ReadMessagesRequest(
-                        username=username, 
-                        num_messages=num_messages,
-                        from_client=False
-                    )
-                    temp_res = stub.ReadMessages(request)
-                    if not temp_res.success:
-                        print(f"Failed to notify server {stub} of read messages for {username}")
-                        print(res.message)
-                        raise Exception(f"Failed to notify server {stub} of read messages for {username}")
-        else:
-            failure = server_pb2.StandardServerResponse(
-                success=res["success"],
-                message=res["message"]
-            )
-            server_response.failure.CopyFrom(failure)
-
-        return server_response
-
     def DeleteAccount(self, request, context):
         username = request.username
         from_client = request.from_client
@@ -501,72 +395,6 @@ class Server(server_pb2_grpc.ServerServicer):
             del self.stub_map[username]
         
         return server_pb2.StandardServerResponse(**res)
-
-    def DeleteMessage(self, request, context):
-        username = request.sender_username
-        message_id = request.message_id
-        from_client = request.from_client
-        print(f"Received delete message request from {username}")
-
-        # If non-leader server receives request from a client, reject
-        if from_client and not self.is_leader:
-            print(f"Server {self.id} is not the leader. Rejecting request.")
-            server_response = server_pb2.StandardServerResponse(
-                success=False, 
-                message="You made a request to a non-leader server. Please try again later."
-            )
-            return server_response
-
-        res = delete_message(username, message_id, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of delete message
-            for stub in self.server_stubs.values():
-                request = server_pb2.DeleteMessageRequest(
-                    sender_username=username, 
-                    message_id=message_id,
-                    from_client=False
-                )
-                temp_res = stub.DeleteMessage(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of delete message for {username}")
-                    print(temp_res.message)
-                    raise Exception(f"Failed to notify server {stub} of delete message for {username}")
-                
-        return server_pb2.StandardServerResponse(**res)
-    
-    def FetchSentMessages(self, request, context):
-        username = request.username
-        print(f"Received fetch sent messages request from {username}")
-        res = fetch_sent_messages(username, self.db_path)
-
-        response = server_pb2.FetchSentMessagesResponse()
-        if res["success"]:
-            response_body = server_pb2.FetchedSentMessages(
-                success=res["success"],
-                message=res["message"],
-            )
-
-            # Add sent messages to server response
-            for target_username, messages in res["sent_messages"].items():
-                sent_messages = server_pb2.SentMessages(
-                    target_username=target_username
-                )
-
-                for message in messages:
-                    unread_message = server_pb2.UnreadMessage(**message)
-                    sent_messages.messages.append(unread_message)
-                    
-                response_body.sent_messages.append(sent_messages)
-
-            response.success.CopyFrom(response_body)
-        else:
-            failure = server_pb2.StandardServerResponse(
-                success=res["success"],
-                message=res["message"]
-            )
-            response.failure.CopyFrom(failure)
-        return response
 
     def UploadImage(self, request_iterator, context):
         '''
@@ -744,22 +572,26 @@ class Server(server_pb2_grpc.ServerServicer):
             return server_response
         
         print(f"Received delete album request from {username} for album {album_name}")
+
+        # Leader: replicate to followers first
+        if self.is_leader:
+            for server_id, stub in self.server_stubs.items():
+                try:
+                    follower_request = server_pb2.DeleteAlbumRequest(
+                        username=username,
+                        album_name=album_name,
+                        from_client=False
+                    )
+                    temp_res = stub.DeleteAlbum(follower_request)
+                    if not temp_res.success:
+                        print(f"[DeleteAlbum] Replication failed on follower {server_id}: {temp_res.message}")
+                        return server_pb2.StandardServerResponse(success=False, message=f"Replication failed on follower {server_id}: {temp_res.message}")
+                except Exception as e:
+                    print(f"[DeleteAlbum] Exception while notifying follower {server_id}: {e}")
+                    return server_pb2.StandardServerResponse(success=False, message=f"Replication error: {e}")
+
+        # Only now perform the local delete
         res = delete_album(username, album_name, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of delete album
-            for stub in self.server_stubs.values():
-                request = server_pb2.DeleteAlbumRequest(
-                    username=username, 
-                    album_name=album_name,
-                    from_client=False
-                )
-                temp_res = stub.DeleteAlbum(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of delete album {album_name} for {username}")
-                    print(res.message)
-                    raise Exception(f"Failed to notify server {stub} of delete album {album_name} for {username}")
-
         return server_pb2.StandardServerResponse(**res)
     
     def DeleteImage(self, request, context):
@@ -781,23 +613,26 @@ class Server(server_pb2_grpc.ServerServicer):
             return server_response
         print(f"Received delete image request from {username} for image {image_name} in album {album_name}")
 
+        # Leader: replicate to followers first
+        if self.is_leader:
+            for server_id, stub in self.server_stubs.items():
+                try:
+                    follower_request = server_pb2.DeleteImageRequest(
+                        username=username,
+                        album_name=album_name,
+                        image_name=image_name,
+                        from_client=False
+                    )
+                    temp_res = stub.DeleteImage(follower_request)
+                    if not temp_res.success:
+                        print(f"[DeleteImage] Replication failed on follower {server_id}: {temp_res.message}")
+                        return server_pb2.StandardServerResponse(success=False, message=f"Replication failed on follower {server_id}: {temp_res.message}")
+                except Exception as e:
+                    print(f"[DeleteImage] Exception while notifying follower {server_id}: {e}")
+                    return server_pb2.StandardServerResponse(success=False, message=f"Replication error: {e}")
+
+        # Only now perform the local delete
         res = delete_image(username, image_name, album_name, self.db_path)
-
-        if res["success"] and self.is_leader:
-            # Notify other servers of delete image
-            for stub in self.server_stubs.values():
-                request = server_pb2.DeleteImageRequest(
-                    username=username, 
-                    album_name=album_name,
-                    image_name=image_name,
-                    from_client=False
-                )
-                temp_res = stub.DeleteImage(request)
-                if not temp_res.success:
-                    print(f"Failed to notify server {stub} of delete image {image_name} in album {album_name} for {username}")
-                    print(temp_res.message)
-                    raise Exception(f"Failed to notify server {stub} of delete image {image_name} in album {album_name} for {username}")
-
         return server_pb2.StandardServerResponse(**res)
     
     def FetchPhotos(self, request, context):
@@ -821,6 +656,11 @@ class Server(server_pb2_grpc.ServerServicer):
         
         print(f"Received fetch photos request from {username} for album {album_name}")
         res = fetch_photos(username, album_name, page, page_size, self.db_path)
+        
+        if not res["success"]:
+            # If the operation failed, return an empty stream
+            return self._generate_image_stream(album_name, [])
+            
         return self._generate_image_stream(album_name, res["images"])
     
     def FetchUserAlbums(self, request, context):
