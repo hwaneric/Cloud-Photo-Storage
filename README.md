@@ -1,8 +1,5 @@
-# Note
-This branch is for the replication design project. For the replication design assignment, please reference this branch, NOT main.
-
-# Chat
-A distributed system for connecting multiple chat clients via a server
+# Overview
+A cloud-based photo storage system that you can run on your own machines! The system is 2-fault tolerant and supports creating shared albums with other users
 
 # Getting Started Locally
 To start running our project locally, first create a Python virtual environment in the root directory by running ```python -m venv venv```. Then activate the venv by running the OS appropriate script as noted in this article: https://www.geeksforgeeks.org/create-virtual-environment-using-venv-python/#
@@ -19,9 +16,8 @@ SERVER_HOST_1 = "{SERVER 1 HOST HERE}"
 SERVER_PORT_1 = {SERVER 1 PORT HERE}
 SERVER_HOST_2 = "{SERVER 2 HOST HERE}"
 SERVER_PORT_2 = {SERVER 2 PORT HERE}
-CLIENT_HOST = "{CLIENT HOST HERE}"
 ```
-The server hosts and ports should be the hosts and ports that the corresponding server is accessible from. The client host should be the host name of the machine that the client is running on. If running on multiple machines, make sure that all the hosts are actual IP addresses and not "localhost" or any equivalents.
+The server hosts and ports should be the hosts and ports that the corresponding server is accessible from. If running on multiple machines, make sure that all the hosts are actual IP addresses and not "localhost" or any equivalents.
 
 Once the above configuration steps are complete, you should be able to run the project! 
 To run the servers, cd into the server folder and run ```python3 driver.py <server_id> <optional: db_path>```. This will begin running one of the servers, so run the command in 3 separate terminal sessions to run all 3 servers simultaneously. The server id is the id of the server you would like to run (must either be 0, 1, or 2). The optional db_path parameter allows the user to specify a custom path to the database file for the server, <b> however we recommend not using the optional db_path parameter unless there is a very strong, specific reason for doing so.</b> If a db_path is not provided, the servers will default to server 0 using the db_0 file, server 1 using the db_1 file, and server 2 using the db_2 file. 
