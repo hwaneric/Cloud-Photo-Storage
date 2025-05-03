@@ -236,6 +236,10 @@ def upload_image(username, image_name, file_type, album_name, db_path, image_dat
     with open(metadata_path, "w") as f:
         json.dump(metadata, f)
     
+    # Remove file extension from the image name if it exists
+    if image_name.lower().endswith(('.png', '.jpg', '.jpeg')):
+        image_name = os.path.splitext(image_name)[0]
+
     # Save the image file
     image_path = os.path.join(image_dir, f"{image_name}.{file_type}")
     
