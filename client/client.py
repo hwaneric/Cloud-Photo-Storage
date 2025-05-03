@@ -333,11 +333,10 @@ class Client:
         request = {
             "username": self.username,
             "album_name": album_name,
-            "from_client": True,
         }
         request = server_pb2.FetchAlbumEditorsRequest(**request)
         res = self.stubs[self.leader].FetchAlbumEditors(request)
-        
+
         if res.success:
             return res.success, res.editors
         else:
