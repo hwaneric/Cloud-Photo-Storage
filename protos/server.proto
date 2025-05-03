@@ -24,7 +24,7 @@ service Server {
     rpc DeleteImage(DeleteImageRequest) returns (StandardServerResponse);
     rpc FetchPhotos(FetchPhotosRequest) returns (stream ImageChunk);
     rpc FetchUserAlbums(FetchUserAlbumsRequest) returns (FetchUserAlbumsResponse);
-    rpc FetchAlbumEditors(FetchAlbumEditorsRequest) returns (FetchUserAlbumsResponse);
+    rpc FetchAlbumEditors(FetchAlbumEditorsRequest) returns (FetchAlbumEditorsResponse);
 }
 
 message StandardServerResponse {
