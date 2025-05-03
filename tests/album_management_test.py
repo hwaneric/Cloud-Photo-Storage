@@ -217,24 +217,47 @@ def test_get_album_editors_success():
         client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.leader = 0
-        
-        # Mock the metadata file
-        metadata_content = {
-            "editors": ["testuser", "friend1", "friend2"]
-        }
-        
-        with patch("os.path.exists", return_value=True), \
-             patch("builtins.open", mock_open(read_data=str(metadata_content))), \
-             patch("json.load", return_value=metadata_content):
+        client.stub = MagicMock()
+        client.stubs = {0: client.stub}
+
+        # Mock the FetchAlbumEditors response
+        mock_response = server_pb2.FetchAlbumEditorsResponse(
+            success=True,
+            message="Editors fetched successfully",
+            editors=["testuser", "friend1", "friend2"]
+        )
+
+        with patch.object(client.stub, 'FetchAlbumEditors', return_value=mock_response):
             editors = client.get_album_editors("vacation")
             assert editors == ["testuser", "friend1", "friend2"]
+            client.stub.FetchAlbumEditors.assert_called_once_with(
+                server_pb2.FetchAlbumEditorsRequest(
+                    username="testuser",
+                    album_name="vacation"
+                )
+            )
 
 def test_get_album_editors_no_metadata():
     with patch.object(Client, '_update_leader', return_value=None):
         client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.leader = 0
-        
-        with patch("os.path.exists", return_value=False):
+        client.stub = MagicMock()
+        client.stubs = {0: client.stub}
+
+        # Mock the FetchAlbumEditors response for failure case
+        mock_response = server_pb2.FetchAlbumEditorsResponse(
+            success=False,
+            message="Album does not exist",
+            editors=[]
+        )
+
+        with patch.object(client.stub, 'FetchAlbumEditors', return_value=mock_response):
             editors = client.get_album_editors("vacation")
-            assert editors == [] 
+            assert editors == []
+            client.stub.FetchAlbumEditors.assert_called_once_with(
+                server_pb2.FetchAlbumEditorsRequest(
+                    username="testuser",
+                    album_name="vacation"
+                )
+            ) 
