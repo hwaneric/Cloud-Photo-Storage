@@ -10,7 +10,7 @@ import server_pb2_grpc
 
 def test_create_album_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -35,7 +35,7 @@ def test_create_album_success():
 
 def test_create_album_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -60,7 +60,7 @@ def test_create_album_failure():
 
 def test_delete_album_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -85,7 +85,7 @@ def test_delete_album_success():
 
 def test_delete_album_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -110,7 +110,7 @@ def test_delete_album_failure():
 
 def test_add_album_editor_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -136,7 +136,7 @@ def test_add_album_editor_success():
 
 def test_add_album_editor_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -162,7 +162,7 @@ def test_add_album_editor_failure():
 
 def test_remove_album_editor_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -188,7 +188,7 @@ def test_remove_album_editor_success():
 
 def test_remove_album_editor_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -214,7 +214,7 @@ def test_remove_album_editor_failure():
 
 def test_get_album_editors_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.leader = 0
         
@@ -231,7 +231,7 @@ def test_get_album_editors_success():
 
 def test_get_album_editors_no_metadata():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.leader = 0
         

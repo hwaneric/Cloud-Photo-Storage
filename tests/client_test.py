@@ -11,7 +11,7 @@ import server_pb2_grpc
 
 def test_signup_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
         client.stubs = {0: client.stub}  # Mock the stubs attribute
@@ -27,7 +27,7 @@ def test_signup_success():
 
 def test_signup_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
         client.stubs = {0: client.stub}  # Mock the stubs attribute
@@ -43,7 +43,7 @@ def test_signup_failure():
 
 def test_login_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
         client.stubs = {0: client.stub}  # Mock the stubs attribute
@@ -62,7 +62,7 @@ def test_login_success():
 
 def test_login_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
         client.stubs = {0: client.stub}  # Mock the stubs attribute
@@ -81,7 +81,7 @@ def test_login_failure():
 
 def test_list_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -99,7 +99,7 @@ def test_list_success():
 
 def test_list_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -117,7 +117,7 @@ def test_list_failure():
 
 def test_logout_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -133,7 +133,7 @@ def test_logout_success():
 
 def test_logout_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -149,7 +149,7 @@ def test_logout_failure():
 
 def test_delete_account_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -167,7 +167,7 @@ def test_delete_account_success():
 
 def test_delete_account_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0  # Mock the leader attribute
@@ -185,7 +185,7 @@ def test_delete_account_failure():
 
 def test_upload_image_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -201,7 +201,7 @@ def test_upload_image_success():
 
 def test_upload_image_unsupported_filetype():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -215,7 +215,7 @@ def test_upload_image_unsupported_filetype():
 
 def test_upload_image_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -231,7 +231,7 @@ def test_upload_image_failure():
 
 def test_fetch_photos_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -254,7 +254,7 @@ def test_fetch_photos_success():
 
 def test_delete_image_success():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0
@@ -267,7 +267,7 @@ def test_delete_image_success():
 
 def test_delete_image_failure():
     with patch.object(Client, '_update_leader', return_value=None):
-        client = Client("127.0.0.1", 12345, "127.0.0.1")
+        client = Client("127.0.0.1", 12345)
         client.username = "testuser"
         client.stub = MagicMock()
         client.leader = 0

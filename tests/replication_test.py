@@ -228,7 +228,7 @@ def test_decorator_triggers_leader_update_on_failure():
         os.environ["SERVER_PORT_2"] = "5002"
 
         # Create client and simulate wrong initial leader
-        client = Client(server_host="localhost", server_port="1234", client_host="localhost")
+        client = Client(server_host="localhost", server_port="1234")
         client.leader = 0  # wrong leader
 
         # Signup triggers decorator-based recovery
