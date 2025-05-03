@@ -40,7 +40,7 @@ The logout and delete account button upon being clicked will close the GUI and a
 For any of these requests, there may be a slight delay of a few seconds if the request is sent in the middle of the servers conducting leader elections, so please be patient if a request does not immediately process!
 
 # Additional Documentation
-Additional documentation for this project can be found here: [https://docs.google.com/document/d/16wj4I3U3kjUVvdADQrB6-EC_sEv5Xo_xCDWyz_uL7R0/edit?tab=t.0](https://docs.google.com/document/d/1pfRI9iEIFDHqc4yO8bJTf63r2nZSx0YVtV2cfSPOstk/edit?tab=t.0)
+Additional documentation for this project can be found here: [https://docs.google.com/document/d/1YmHQOeT9xTAVMLlScoJI2uOaV_kc11jniBPDSLFM9VE/edit?tab=t.0](https://docs.google.com/document/d/1YmHQOeT9xTAVMLlScoJI2uOaV_kc11jniBPDSLFM9VE/edit?tab=t.0)
 
 # Running Tests
 To run our test suite, cd into the tests folder and run ```pytest``` in the terminal.
