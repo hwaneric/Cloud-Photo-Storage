@@ -330,15 +330,25 @@ class Client:
     @retry_on_failure()
     def get_album_editors(self, album_name):
         """Get the list of editors for an album."""
-        request = {
-            "username": self.username,
-            "album_name": album_name,
-        }
-        request = server_pb2.FetchAlbumEditorsRequest(**request)
-        res = self.stubs[self.leader].FetchAlbumEditors(request)
+        try:
+            # Create the request with all required fields
+            request = server_pb2.FetchAlbumEditorsRequest(
+                username=self.username,
+                album_name=album_name,
+                from_client=True
+            )
 
-        if res.success:
-            return res.success, res.editors
-        else:
-            return res.success, res.message
+            # Make the RPC call
+            response = self.stubs[self.leader].FetchAlbumEditors(request)
+
+            # Check if the response was successful
+            if response.success:
+                return response.editors
+            else:
+                print(f"Error getting album editors: {response.message}")
+                return []
+
+        except Exception as e:
+            print(f"Error getting album editors: {str(e)}")
+            return []
  
