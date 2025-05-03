@@ -725,10 +725,10 @@ class Server(server_pb2_grpc.ServerServicer):
         '''
             Fetches all editors for the specified album
         '''
+        print('HELLOOOOOOO')
         username = request.username
         album_name = request.album_name
 
-        
         print(f"Received fetch album editors request from {username} for album {album_name}")
         res = fetch_album_editors(username, album_name, self.db_path)
         

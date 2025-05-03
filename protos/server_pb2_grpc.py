@@ -141,7 +141,7 @@ class ServerStub(object):
                 _registered_method=True)
         self.FetchAlbumEditors = channel.unary_unary(
                 '/server.Server/FetchAlbumEditors',
-                request_serializer=server__pb2.FetchUserAlbumsRequest.SerializeToString,
+                request_serializer=server__pb2.FetchAlbumEditorsRequest.SerializeToString,
                 response_deserializer=server__pb2.FetchUserAlbumsResponse.FromString,
                 _registered_method=True)
 
@@ -391,7 +391,7 @@ def add_ServerServicer_to_server(servicer, server):
             ),
             'FetchAlbumEditors': grpc.unary_unary_rpc_method_handler(
                     servicer.FetchAlbumEditors,
-                    request_deserializer=server__pb2.FetchUserAlbumsRequest.FromString,
+                    request_deserializer=server__pb2.FetchAlbumEditorsRequest.FromString,
                     response_serializer=server__pb2.FetchUserAlbumsResponse.SerializeToString,
             ),
     }
@@ -987,7 +987,7 @@ class Server(object):
             request,
             target,
             '/server.Server/FetchAlbumEditors',
-            server__pb2.FetchUserAlbumsRequest.SerializeToString,
+            server__pb2.FetchAlbumEditorsRequest.SerializeToString,
             server__pb2.FetchUserAlbumsResponse.FromString,
             options,
             channel_credentials,

@@ -334,8 +334,7 @@ class Client:
             # Create the request with all required fields
             request = server_pb2.FetchAlbumEditorsRequest(
                 username=self.username,
-                album_name=album_name,
-                from_client=True
+                album_name=album_name
             )
 
             # Make the RPC call
