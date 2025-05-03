@@ -7,7 +7,7 @@ import bcrypt
 import uuid
 import selectors
 sys.path.append('../')
-from server.account_management import load_user_data, save_user_data, username_exists, create_account, login, logout, list_accounts, send_offline_message, read_messages, check_if_online, get_db_pathname, logout_all_users, delete_account, delete_message, fetch_sent_messages
+from server.account_management import load_user_data, save_user_data, username_exists, create_account, login, logout, list_accounts, check_if_online, get_db_pathname, logout_all_users, delete_account
 
 DB_PATH = '/mock/path'
 
@@ -111,8 +111,7 @@ def test_login_success():
         
         assert result == {
             "success": True,
-            "message": "Login successful.",
-            "unread_message_count": 0
+            "message": "Login successful."
         }
 
 def test_login_user_already_logged_in():
@@ -212,80 +211,6 @@ def test_list_accounts_no_matches():
             "success": True,
             "message": "Accounts listed successfully.",
             "matches": [],
-        }
-
-def test_send_offline_message_success():
-    dummy_users = {
-        'targetuser': {},
-        'senderuser': {}
-    }
-    dummy_unread_messages = []
-    dummy_sent_messages = {}
-
-    with patch('server.account_management.load_user_data', return_value=dummy_users), \
-         patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', side_effect=lambda path: path.endswith('targetuser.json')), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_unread_messages))) as mock_file, \
-         patch('uuid.uuid4', return_value=uuid.UUID('12345678123456781234567812345678')), \
-         patch('json.load', side_effect=[dummy_unread_messages, dummy_sent_messages]), \
-         patch('json.dump') as mock_json_dump:
-        
-        result, _ = send_offline_message('targetuser', 'senderuser', 'Hello, World!', 1234567890, DB_PATH)
-        
-        assert result == {
-            "success": True,
-            "message": "Message sent successfully.",
-        }
-
-def test_send_offline_message_target_user_does_not_exist():
-    dummy_users = {
-        'senderuser': {}
-    }
-
-    with patch('server.account_management.load_user_data', return_value=dummy_users), \
-         patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=False):
-        
-        result, _ = send_offline_message('nonexistentuser', 'senderuser', 'Hello, World!', 1234567890, DB_PATH)
-        
-        assert result == {
-            "success": False,
-            "message": "Target user does not exist.",
-        }
-
-def test_read_messages_success():
-    dummy_unread_messages = [
-        {"message_id": "1", "message": "Hello", "sender": "user1", "timestamp": 1234567890},
-        {"message_id": "2", "message": "Hi", "sender": "user2", "timestamp": 1234567891}
-    ]
-    dummy_sent_messages = {
-        "user1": [{"message_id": "1", "message": "Hello", "sender": "user1", "timestamp": 1234567890}],
-        "user2": [{"message_id": "2", "message": "Hi", "sender": "user2", "timestamp": 1234567891}]
-    }
-
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=True), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_unread_messages))) as mock_file, \
-         patch('json.load', side_effect=[dummy_unread_messages, dummy_sent_messages]), \
-         patch('json.dump') as mock_json_dump:
-        
-        result = read_messages('testuser', 1, DB_PATH)
-        
-        assert result == {
-            "success": True,
-            "message": "Messages read successfully.",
-            "messages": [dummy_unread_messages[0]],
-        }
-
-def test_read_messages_target_user_does_not_exist():
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=False):
-        
-        result = read_messages('nonexistentuser', 1, DB_PATH)
-        
-        assert result == {
-            "success": False,
-            "message": "Target user does not exist.",
         }
 
 def test_check_if_online_user_online():
@@ -395,103 +320,12 @@ def test_delete_account_offline_user():
             'online': False
         }
     }
-    with patch('server.account_management.load_user_data', return_value=dummy_users):
-        
+    with patch('server.account_management.load_user_data', return_value=dummy_users), \
+         patch('server.account_management.save_user_data') as mock_save, \
+         patch('builtins.open', mock_open()), \
+         patch('os.path.exists', return_value=True):
         result = delete_account('testuser', DB_PATH)
-        
         assert result == {
             "success": False,
             "message": "Attempting to delete offline account.",
-        }
-
-def test_delete_message_success():
-    dummy_sent_messages = {
-        'recipientuser': [
-            {"message_id": "1", "message": "Hello", "sender": "testuser", "timestamp": 1234567890}
-        ]
-    }
-    dummy_unread_messages = [
-        {"message_id": "1", "message": "Hello", "sender": "testuser", "timestamp": 1234567890}
-    ]
-
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=True), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_sent_messages))) as mock_file, \
-         patch('json.load', side_effect=[dummy_sent_messages, dummy_unread_messages]), \
-         patch('json.dump') as mock_json_dump:
-        
-        result = delete_message('testuser', '1', DB_PATH)
-        
-        assert result == {
-            "success": True,
-            "message": "Message deleted successfully.",
-        }
-
-def test_delete_message_no_sent_messages():
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=False):
-        
-        result = delete_message('testuser', '1', DB_PATH)
-        
-        assert result == {
-            "success": False,
-            "message": "No sent messages found.",
-        }
-
-def test_delete_message_id_not_found():
-    dummy_sent_messages = {
-        'recipientuser': [
-            {"message_id": "2", "message": "Hello", "sender": "testuser", "timestamp": 1234567890}
-        ]
-    }
-
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=True), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_sent_messages))) as mock_file, \
-         patch('json.load', return_value=dummy_sent_messages):
-        
-        result = delete_message('testuser', '1', DB_PATH)
-        
-        assert result == {
-            "success": False,
-            "message": "Message ID not found.",
-        }
-
-def test_delete_message_target_user_does_not_exist():
-    dummy_sent_messages = {
-        'recipientuser': [
-            {"message_id": "1", "message": "Hello", "sender": "testuser", "timestamp": 1234567890}
-        ]
-    }
-
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', side_effect=lambda path: not path.endswith('recipientuser.json')), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_sent_messages))) as mock_file, \
-         patch('json.load', return_value=dummy_sent_messages):
-        
-        result = delete_message('testuser', '1', DB_PATH)
-        
-        assert result == {
-            "success": False,
-            "message": "Target user does not exist.",
-        }
-
-def test_fetch_sent_messages_success():
-    dummy_sent_messages = {
-        'recipientuser': [
-            {"message_id": "1", "message": "Hello", "sender": "testuser", "timestamp": 1234567890}
-        ]
-    }
-
-    with patch('server.account_management.get_db_pathname', return_value=DB_PATH), \
-         patch('os.path.exists', return_value=True), \
-         patch('builtins.open', mock_open(read_data=json.dumps(dummy_sent_messages))) as mock_file, \
-         patch('json.load', return_value=dummy_sent_messages):
-        
-        result = fetch_sent_messages('testuser', DB_PATH)
-
-        assert result == {
-            "success": True,
-            "sent_messages": dummy_sent_messages,
-            "message": "Sent messages fetched successfully.",
         }

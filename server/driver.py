@@ -13,7 +13,7 @@ import server_pb2
 import server_pb2_grpc
 import client_listener_pb2
 import client_listener_pb2_grpc
-from account_management import check_if_online, create_account, fetch_sent_messages, list_accounts, login, logout, logout_all_users, read_messages, send_offline_message, delete_account, delete_message
+from account_management import check_if_online, create_account, list_accounts, login, logout, logout_all_users, delete_account
 import threading
 import os
 
