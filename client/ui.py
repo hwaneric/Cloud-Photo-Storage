@@ -771,7 +771,7 @@ class PhotoApp:
             return
 
         file_path = filedialog.askopenfilename(
-            filetypes=[("Image files", "*.jpg;*.png"), ("JPEG files", "*.jpg"), ("PNG files", "*.png")]
+            filetypes=[("Image files", "*.jpg *.jpeg *.png"), ("JPEG files", "*.jpg *.jpeg"), ("PNG files", "*.png")]
         )
         if file_path:
             success, message = self.client.upload_image(file_path, self.current_album)
