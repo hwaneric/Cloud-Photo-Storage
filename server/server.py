@@ -735,7 +735,9 @@ class Server(server_pb2_grpc.ServerServicer):
         if not res["success"]:
             return server_pb2.FetchAlbumEditorsResponse(success=False, message=res["message"], editors=[])
 
-        return server_pb2.FetchAlbumEditorsResponse(**res)
+        response = server_pb2.FetchAlbumEditorsResponse(**res)
+        print("HELLO, RESPONSE", response)
+        return response
 
     def cleanup(self):
         '''
